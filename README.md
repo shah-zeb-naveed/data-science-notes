@@ -2,6 +2,33 @@
 Notes and Resources on Machine Learning and Statistics
 
 
+# Designing ML Systems
+1. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
+3. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category
+4. NNs don't work well with unit variance.
+5. Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
+6. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
+7. For time-series data, split by time to prevent leakage.
+8. Use statistics from train split for scaling, imputaiton etc. (even EDA)
+9. Groups (like records of same patient taken milliseconds apart) should be in same split.
+10. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
+11. Test performane should only be used for reporting, not for decision making.
+12. feature stores != feature definion management
+13. feature generalization to unseen data. e.g. commmend_id may be bad but user_id might be impportant.
+14. Shouldn't just remove a feature based on coverage. Should look at relationship with output.
+15. Feature scaling impacts gradient boosted trees
+16. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
+17. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
+18. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
+19. ML models can fail silently.
+20. Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
+21. Good practices to avoid problems. Start with simplest architecture (like one-layered RNN before expanding), overfit to training and evaluate on same (to make sure minimal loss achieved), set random seeds.
+22. Distributed training:
+- Data parallelism: split data and train models separaptely. reconcile gradients on central node. synchronous (have to wait) or asyncrhonous (update as they arrive). Async requires more time but when # of params is high, weight updates are sparse so staleness is less of an issue. Use smaller batch size on main worker node to even out compute requirements.
+- Model parallelism: handle different parts of the model on diff machines. If assigning diff layers of NN to diff machines, not really parallelism.
+- Pipeline parallelism: Reduce idle time when part of computation (micro-batches) is complete and passes results to other machine so it can start working.
+- Phases: pre-ML/heuristics, simple models, optimize simple, complex models
+
 # Resources
 
 ## Statistics
