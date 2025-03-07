@@ -1,5 +1,4 @@
-# pre-interview-notes
-Notes and Resources on Machine Learning and Statistics
+# Notes on Data Science, Machine Learning and Statistics
 
 
 # Designing ML Systems
@@ -39,6 +38,12 @@ Notes and Resources on Machine Learning and Statistics
 32. In streaming, incoming features need to be stored in data warehouse in addition to streaming features to prediction service via real-time transport.
 33. Batched doesn't necessarily mean less efficient. In fact, online means less resources wasted on datapoints not used (users never logged in).
 34. Problem with batch is recency (if users' preferences can change significantly), also need to know datapoints in advance.
+35. Can use feature store to ensure batch features used during training are equal to streaming features used in inference.
+36. Decrease inference latency by: compression, inference optimization, improving hardware
+37. Compression:
+    - LoRa. high-dim tensors -> decompose to compact tensors. reduces number of parameters. e.g. compact convolution filters but not widely adopted yet.
+    - Knowledge distillation -> teacher student (less data, faster, smaller) model. can also train both at the same time. both can have different architectures (tree vs NN).
+    - Pruning: like removing sub-trees or zeroing params in NN (reduces # of non-zero params, reducing storage, improving computation). can introduce bias.
 
 
 # Resources
