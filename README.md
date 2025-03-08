@@ -35,16 +35,33 @@
 
 30. Software degrades over time (software rot)
 31. Batch prediction (async) for high trhoughput, for low latency: online (sync) with batch features, or online with batch and streaming (streaming prediction). hybrid when popular/expensive queries pre-processed in batch and others on-demand.
-32. In streaming, incoming features need to be stored in data warehouse in addition to streaming features to prediction service via real-time transport.
-33. Batched doesn't necessarily mean less efficient. In fact, online means less resources wasted on datapoints not used (users never logged in).
-34. Problem with batch is recency (if users' preferences can change significantly), also need to know datapoints in advance.
-35. Can use feature store to ensure batch features used during training are equal to streaming features used in inference.
-36. Decrease inference latency by: compression, inference optimization, improving hardware
-37. Compression:
+32. Latency and hardware can help decide between online vs batch and cloud vs edge.
+33. In streaming, incoming features need to be stored in data warehouse in addition to streaming features to prediction service via real-time transport.
+34. Batched doesn't necessarily mean less efficient. In fact, online means less resources wasted on datapoints not used (users never logged in).
+35. Problem with batch is recency (if users' preferences can change significantly), also need to know datapoints in advance.
+36. Can use feature store to ensure batch features used during training are equal to streaming features used in inference.
+37. Decrease inference latency by: compression, inference optimization, improving hardware
+38. Compression:
     - LoRa. high-dim tensors -> decompose to compact tensors. reduces number of parameters. e.g. compact convolution filters but not widely adopted yet.
     - Knowledge distillation -> teacher student (less data, faster, smaller) model. can also train both at the same time. both can have different architectures (tree vs NN).
     - Pruning: like removing sub-trees or zeroing params in NN (reduces # of non-zero params, reducing storage, improving computation). can introduce bias.
+    - Quantization: trainiing (quantization-aware) or post-training in lower precision. If int (8 bits), it's called fixed precision. Quantization reduces memory footprint, storage requirements, faster computation. BUT means can only represent a smaller range of values, rounding/scaling up can result in errors, risk of overflowing/underflowing. Mixed-precision popular in traiing. Training in fixed not popular but standard in inference (like dege devices).
+    - Input shape can be optimized for improving throughput and latency as well.
 
+39. Cloud easier to start but more costs, requires nettwork connectivity, have higher latency, more privacy concerns but on-edge might drain device power
+40. Compiling for hardware: Intermediate representatin is the middleman between framework and hardware. High-level, tuned, low-level IRs -> MACHINE CODE. IRs are computation graphs.
+41. Model optimization:
+    - Compiled lower IR could be slow because different frameworks (pandas, pytorch etc) optimized differently. For optimizing, use compiles that support optimization. Local (set of ops) and global (entire comp. graph) optimization. Vectorization (instead of loop), parallelization (process input chunks), loop tiling (hadware dependent, change data access order to match memory layout), operator fusion (veritcally for merging sequential ops or horizontally for parallel ops that share same inputs to fuse ops to avoid redudant memory accesses). for exmaple, two consective 3 x 3 convs CBR (Convolution, bias, RELU) have a receptive field of 5 x 5.
+    - Hand-designed fusion can be manual, depends on hardware and expertise. ML-based helps estimate cost by generating ground truth for cost estimation model and then predicting time for each sub-graph and then an algo determine the most optimal path to take.
+    - In browsers, can use js but it's limited and very slow. WASM is an open-source standard which we can use to compile models. WASM is faster than js but still slow.
+42. Failures: Software system (deployment, downtime, harware, depency). ML-specific (train-serving skew, data/trends change over time,
+43. Degenerate feedback loops (where model outputs influence future system inputs). Especially common in cases of natural labels. That's popular movies keep getting more popular. Also known as  “exposure bias,” “popularity bias,” “filter bubbles,” and sometimes “echo chambers.”. Can magnify bias and lead to systems performing sub-optimally.
+  - detect by measuring diversity of items. or bucketing items and measuring model performance. once online, if outputs become more homogenous, most liekly feedback loop.
+  -  correct by:
+    -  randomization to reduce homogeneity, like tiktok seeds traffic for a new video randomly to decide whether to promote/demote. improvement in diversity comes at a cost of accuracy. "Contextual bandits as an exploration strategy" can make recommendations more "fair" for content creators.
+    -  if position matters (like pos. of song on spotify), it can affect feedback. can train the model with position encoded and then mark as 1 during inference. another approach is to train 2 models, 1 model predicts probability that an item will be seen and considered given position, other predicts if an item will be clicked given they considered.
+44. Data Distribution Shifts
+45.  
 
 # Resources
 
