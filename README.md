@@ -61,7 +61,16 @@
     -  randomization to reduce homogeneity, like tiktok seeds traffic for a new video randomly to decide whether to promote/demote. improvement in diversity comes at a cost of accuracy. "Contextual bandits as an exploration strategy" can make recommendations more "fair" for content creators.
     -  if position matters (like pos. of song on spotify), it can affect feedback. can train the model with position encoded and then mark as 1 during inference. another approach is to train 2 models, 1 model predicts probability that an item will be seen and considered given position, other predicts if an item will be clicked given they considered.
 44. Data Distribution Shifts
-45.  
+  - Covariate, P(X) changes but P(Y|X). During development, because of selection bias, up/down-sampling, algo (like active learning). In prod, environment changes.
+  - Label (prior) shift, P(Y) changes but P(X|Y). Sometimes covariate can result in label shfit.
+  - Concept Shift (posterior), P(Y|X) changes but P(X). Same input, diff output. Usualyl cyclic/seasonal. Can use diff models to deal with seasonal drifts.
+  - Feature change (schema or range of values)
+  - Detection: natural/labels will help determine if model perfformance degrading. P(X), P(y), P(Y|X), P(X|Y). Y here is ground truht but if not available, at least look at predictions.
+  - Can use summary stats but not a guaruantee. Use 2 sample test. Statistical != practical signf. Might only be worth worryinga about if diff detected with small sample size. E.g KS test but only works on 1D data.
+  - Time-series shifts also possible, time window selection will make a different. should track data post production. Shorter intervals  can lead to "alert fatigue" but can help detect issues faster. Cummulitive can hide trends which sliding window stats can uncover.
+  - Retrain using massive dataset in the hope issue is prevented and/or retrain at a certain cadence. Retraining can be stateless or fine-tuning. Feature selection can impact need for frequency of retraining. Can also divide model into sub-models where some are trained more frequent.
+      
+
 
 # Resources
 
