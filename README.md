@@ -69,8 +69,25 @@
   - Can use summary stats but not a guaruantee. Use 2 sample test. Statistical != practical signf. Might only be worth worryinga about if diff detected with small sample size. E.g KS test but only works on 1D data.
   - Time-series shifts also possible, time window selection will make a different. should track data post production. Shorter intervals  can lead to "alert fatigue" but can help detect issues faster. Cummulitive can hide trends which sliding window stats can uncover.
   - Retrain using massive dataset in the hope issue is prevented and/or retrain at a certain cadence. Retraining can be stateless or fine-tuning. Feature selection can impact need for frequency of retraining. Can also divide model into sub-models where some are trained more frequent.
-      
-
+45. Observability is part of monitoring. Log important metrics related to network (latency, throughput), hardware (cpu utilization, uptime), ml-related.
+  - ML-related: raw inputs, features, predictions, accuracy. from harder to easier to monitor. from "less likely to be caused by human errors" to be more closer to business.
+  - accuracy: explicit feedback or inferred/natural labels. if not ground truth, at least secondary metrics can help detect degradation.
+  - predictions: ground truth may have lag. monitor output to see if something is weird (like more 0s). If model is same, diff output can be due to diff input.
+  - features: summary stats, business rules etc.
+  - 3 pillars of monitoring: logs, metrics, traces.
+  - distributed tracing - each process has ID s.
+  - log analysis (ml-based anomaly detection, prob. of other services being affected.
+  - dashboards are helpful for monitoring for both engineers and non. but too many metrics/dashboards can lead to "dashboard rot".
+  - Alerts - alert policy (trigger, duration, suppression), channels, description
+  - Monitoring is about tracking outputs. Monitoring makes no gurantee it will help you find out what went wrong. Monitoring assumes its possible to run tests and let data pass through system to narrow down the problem. Observability makes a stronger assumption that internal states can be inferred using outputs. Allows more fine-grained metrics. Observability and Interpretability go hand-in-hand.
+  - Monitoring/obs. is essentially passive.
+46. Continual learning:
+  - about setting up infrastructure.
+  - learning with every sample can lead to catastrophic forgetting. less efficient as hardware designed for batch processing, unable to exploid data parallelism. instead update with micro-batch (task dependent).
+  - replica from current champion model. evaluate challenger vs champion.
+  - can do stateless or stateful (fine-tuning, incremental learning). stateful requires less data, allows faster converage, less compute. with stateful, can train from scratch every now and then to realibrate the model. can also combine stateful and staeless models using techniques like **parameter server.**
+  - Data iteration vs model iteration. Model iteration mostly needs stateless but can explore knowledge transfer and model surgery.
+  - `
 
 # Resources
 
