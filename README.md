@@ -34,7 +34,7 @@
 29. Perturbation tests, invariance tests (changing sensitive info should not change output like gender, directional expectation tests for sanity checks, model calibration for actual probabilities, slice-based evaluations to detect bias, or to make sure critical groups are prioritized, or to detect upstream (e.g. latency from mobile users) issues. Find slices by heuristics, error analysis, slice finder (clustering-based techniques).
 
 30. Software degrades over time (software rot)
-31. Batch prediction (async) for high trhoughput, for low latency: online (sync) with batch features, or online with batch and streaming (streaming prediction). hybrid when popular/expensive queries pre-processed in batch and others on-demand.
+31. Batch prediction (async) for high trhoughput, for low latency: online (sync) with batch features, or online with batch and streaming (streaming prediction). hybrid when popular/expensive queries pre-processed in batch and others on-demand. An endpoint can serve batch (precomputed predictions). batching requests for efficiency is not same as batch predictions.
 32. Latency and hardware can help decide between online vs batch and cloud vs edge.
 33. In streaming, incoming features need to be stored in data warehouse in addition to streaming features to prediction service via real-time transport.
 34. Batched doesn't necessarily mean less efficient. In fact, online means less resources wasted on datapoints not used (users never logged in).
@@ -105,7 +105,20 @@
    - require less data but are complex
    - Contextual bandits as an exploration strategy - contextual bandits determine payout of each action like item. can have partial feedback problem (badnit feedback).
    - less adopted in industry except top-tech.
-
+48. Infra/Tooling
+  - storage/compute. we cannot stop 1 container in 2-container pod. in addition to RAM, bandwidth/IO is also important. ops are measured in FLOPS (floating point ops per second). If 1 million FLOPS hardware but app/job runs 0.3, then utilization is 30%. but since it's definition is ambiguous, it's not very useful. Often vCPU used (approx. half of physical core). for companies that grow by a lot, cloud costs can be as high as 50% of their revenue which makes them go back to private data centers (cloud repatriation). Companies use hybrid approach. Multi cloud is also popular to avoid "vendor lock-in". Standardizing dev env is critical and cloud-based envs help.
+  - resource management. pre-cloud era demanded resource utilization. with cloud/elastic, can just scale up esp. if engineers prodictivity is more important. A Scheduler helps cron by bringing in dependeny management. An Orchestrator is concerned with "where" to get thos eresources. "Schedulers deal with job-type abstractions such as DAGs, priority queues, user-level quotas (i.e., the maximum number of instances a user can use at a given time), etc. Orchestrators deal with lower-level abstractions like machines, instances, clusters, service-level grouping, replication, etc....... ". Schedulers for periodical jobs and orchestrators for services where long-running server responds to requests. Used interchangebly since features oberlap and orchestrators like Airflow have their own schedulers.
+    - workflow management tools have schedulers that define tasks and then work with underlying orchestrator to execture jobs. orchestrators often have an instance pool. 
+      - airflow was pioneer (config-as-code)and had drawbacks (difficulty setting up diff containers for diff tasks, not parametric, static)
+      - perfect (dynamic, parametrized, config-as-code)
+      - argo (each step runs natively in diff container but uses YAML). only with k8s and k8s not always available in dev. minikube can stimualt but is messy.
+      - Kubeflow and Metaflow - most popular and adnvaced. config as code. kubeflow needs dockerfile and YAML file. Metaflow uses decorators for further abstraction.
+  - ml platform: (sagemaker/mlflow) definition varies but set of shared tools for ml adoption and dpeloyment. choice of tool depends on integration with current cloud you're using or wehterh it supports self-hosting/managed service.
+    - deployment:
+      - 
+      - 
+  - ml platform (sagemaker/mlflow)
+  - dev enviornment (git, ci/cd, ide)
 
  # Resources
 
