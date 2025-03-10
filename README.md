@@ -87,9 +87,27 @@
   - replica from current champion model. evaluate challenger vs champion.
   - can do stateless or stateful (fine-tuning, incremental learning). stateful requires less data, allows faster converage, less compute. with stateful, can train from scratch every now and then to realibrate the model. can also combine stateful and staeless models using techniques like **parameter server.**
   - Data iteration vs model iteration. Model iteration mostly needs stateless but can explore knowledge transfer and model surgery.
-  - `
+  - Combat data distribution shifts and continuous cold start problem (where data does not exist for even existing users because of access styles). Might have to do prediction in real-time within a few minutes on user's first session e.g. tiktok.
+  - Challenges of continual leanring
+    -  Natural labels often need to be extracted from logged behavioral activities. For faster access, should tap into RT transport instead of waiting for data to arrive in data warehouse. leverage programmatic data labelling platforms like Snorkel (allows uses labelling functions which they call as "weak supervision", collaboration b/w domain xperts.
+    - Evaluation is challenging with continual learning. retraining frequency can be limited if A/B tesitng is needed and enough sample size will be reached onyl after a certain time like rare events.
+    - some algos (like matrix and tree) based aren't designed or efficient for partial learning. e.g. colab filteirng will require building matrix, performing dim reduction which can be expensdive if done frequently. NNs are a better choice.
+    - need to consider feature preprocessing like scaling as well. running statistics are supported by sklearn but are slow. if computed individual for differenet subsets, they can vary a lot and model trained on one subset might not generalize well.
+    - 4 phases of continual learning: manual/stateless (adhoc retraining, focus on new mdoels), automated retraining (gut feeling or idle compute, or even experimenets, need to automate entire process from pulling data, generating labels to deploying, need Scheduler, Data, Model store), Automated/stateful training (but still on a fixed schedule), Continual learning (based on model degrapdation/shifts, even edge deployments can continually retrain without requiring networking with central server ->  better privacy).
+    - The gain from having fresh data can be determined by running experiments on historic data. Similar whether to do data/model iteration depends on compute/performance gain.
+47. Test in production:
+ - if updated model on new data distribution, test on recent data "backtesting" in "addition" to static test set. recent data could be corrupted.
+ - shadow deployment: expensive coz doubles inference cost
+ - a/b testing: if model 1 (A and B) is upstream dor model 2, then keep switching A and B (like on alternating days). ensure randomness in traffic routing. calculate sample size based on power analysis (MDE, alpha rate, power or 1-beta, expected variance). Historic growth will define how long to run the experiment for. Error rate (0.05) means we might just pick a wrong model by chance. also possible in batch predictions. it is stateless (does not consider model's current performance).
+ - Canary release (safe-rollout): simialr to A/B testing but doesn't have to be random. e.g. releasing to less critical/low risk markets first.
+ - Interleaving, instead of spliting user groups, serve both models to each user and measure user preferences. May not be tied to actual core performance metrics (not sure what was meant by this statement). Need to make sure there is no position bias, by encoding position or by picking A or B with equal probability. Just like drafting process in sports.
+ - bandits: each model a slot machine. requests served to the model with best current performance while also exploring along the way. maximizing predicition accuracy for users. requires online, preferable short/explicit feedback, a mechanism to keep track of each model's current performance and routing requests. similar to exploration-exploitation strategy in reinforcement leanring. e.g. e-greedy. Other exploration algos include Thompson Sampling, Upper Confidence Bound.
+   - require less data but are complex
+   - Contextual bandits as an exploration strategy - contextual bandits determine payout of each action like item. can have partial feedback problem (badnit feedback).
+   - less adopted in industry except top-tech.
 
-# Resources
+
+ # Resources
 
 ## Statistics
 
