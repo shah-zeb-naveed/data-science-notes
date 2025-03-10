@@ -114,10 +114,9 @@
       - argo (each step runs natively in diff container but uses YAML). only with k8s and k8s not always available in dev. minikube can stimualt but is messy.
       - Kubeflow and Metaflow - most popular and adnvaced. config as code. kubeflow needs dockerfile and YAML file. Metaflow uses decorators for further abstraction.
   - ml platform: (sagemaker/mlflow) definition varies but set of shared tools for ml adoption and dpeloyment. choice of tool depends on integration with current cloud you're using or wehterh it supports self-hosting/managed service.
-    - deployment:
-      - 
-      - 
-  - ml platform (sagemaker/mlflow)
+- deployment:
+- model store: definition (shape, architecture), params (sometimes unified with definition file), featurize/predict funcs, dependencies, data (uri, DVC helps version data), model generation code, experiment artifacts, tags (even including git commit).
+- Feature store: management (shareability, definition), computation, storage (acts like a data warehouse), consistency (some platforms help ensure logic is same between training and inference pipelines).
   - dev enviornment (git, ci/cd, ide)
 
  # Resources
