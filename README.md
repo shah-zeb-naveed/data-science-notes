@@ -1,7 +1,7 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 
-# Designing ML Systems
+# Designing Machine Learning Systems (by Chip Huyen)
 1. Requirements of ML systems: reliability, scalability, maintainability, adaptability
 2. Types of ML problems:
    - multilabel classicication: 1 model for all classes with binary vector as output or 1 model for each class where output vector only has one 1.
