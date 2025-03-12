@@ -118,6 +118,13 @@
 - model store: definition (shape, architecture), params (sometimes unified with definition file), featurize/predict funcs, dependencies, data (uri, DVC helps version data), model generation code, experiment artifacts, tags (even including git commit).
 - Feature store: management (shareability, definition), computation, storage (acts like a data warehouse), consistency (some platforms help ensure logic is same between training and inference pipelines).
   - dev enviornment (git, ci/cd, ide)
+49. UX
+  - Consistency-accuracy trade-off
+  - Human-in-the-loop
+  - Smooth failing: use backup/heuristic if new model takes a lot of time
+  - 
+
+
 
  # Resources
 
