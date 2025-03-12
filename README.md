@@ -122,8 +122,19 @@
   - Consistency-accuracy trade-off
   - Human-in-the-loop
   - Smooth failing: use backup/heuristic if new model takes a lot of time
-  - 
-
+50. Responsible AI:
+  - Framework
+    - Discover sources for bias
+      - training data, biased towards underrepresented groups
+      - labelling, annotator's subjectivity
+      - featuring engineering: disparate impact, use DisparateImpactRemover
+      - Model's objective, does it make sense? does it bias model towards majority?
+      - evaluation
+    - Privacy vs accuracy trade-off
+      - Differential privacy: protects individual while sharing group stats
+    - Compactness vs fairness trade-off: compression might impact unfairly
+  - use package slike AI 360 and fairlearn to detect and mitigate bias
+    
 
 
  # Resources
