@@ -2,28 +2,70 @@
 
 
 # Designing ML Systems
-1. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
-3. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category
-4. NNs don't work well with unit variance.
-5. Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
-6. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
-7. For time-series data, split by time to prevent leakage.
-8. Use statistics from train split for scaling, imputaiton etc. (even EDA)
-9. Groups (like records of same patient taken milliseconds apart) should be in same split.
-10. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
-11. Test performane should only be used for reporting, not for decision making.
-12. feature stores != feature definion management
-13. feature generalization to unseen data. e.g. commmend_id may be bad but user_id might be impportant.
-14. Shouldn't just remove a feature based on coverage. Should look at relationship with output.
-15. Feature scaling impacts gradient boosted trees
-16. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
-17. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
-18. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
-19. ML models can fail silently.
-21. Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
-22. Good practices to avoid problems. Start with simplest architecture (like one-layered RNN before expanding), overfit to training and evaluate on same (to make sure minimal loss achieved), set random seeds.
-23. Models with high bias may not improve from more training data but a high variance model might.
-24. Distributed training:
+1. Requirements of ML systems: reliability, scalability, maintainability, adaptability
+2. Types of ML problems:
+   - multilabel classicication: 1 model for all classes with binary vector as output or 1 model for each class where output vector only has one 1.
+   - Multiple ways to solve a problem: if using User + Environment features for outputting a score for each app where output vector size based on current N apps -> can't scale for new apps but instead, use User + Env + App features (for all available apps) and output a single value.
+   - Multiple objectives: one approach is to join different losses in one objective and set their co-efficients but this requires retraining on each choice of co-efficient combo. Instead can train different models for different losses and than create scores based on heuristics.
+3. Data Engineering
+   - binary files are compact
+   - row vs columnar tables, good for inserts or reading rows (csvs), parquet good for columnar analytics
+   - NOSQL: document-type have rare relationhips. graph-based suit better for such cases.
+   - OLTP: transactional, fast writes so users dont wait
+     - ACID: definitons vary.
+       - atomicity, entire transaction is sucessful or fails completely
+       - consistency, data follows pre-defined rules. 
+       - isolation, transactions that happen at the same time don't change data at the same time
+       - durability, once stored, db failure doesn't matter
+     - if not ACID, usually BASE (basically available, soft state and eventual consistency)
+   - OLAP: for analytical needs.
+   - both OLAP/OLTP become outdated. New is Lakehouse (best of data warehouse and data lake)
+   - ELT instead of ETL so transformations done by apps that pull from warehouses and ELT process doesn't care about source schema changes
+   - Data passing b/w services (aka request driven). Having different services for different components of the company's ML needs.
+   - data broadcasted to a broker (called events in event-driven even hub)
+4. Sampling
+     - Non-probaiblity sampling (convenience, snowball (start small and then increase), juedgement (experts decide what to use), quota sampling (custom defined groups). Signifciant selectio bias.
+     - Simple random (minoirty class might be sampled out compltely)
+     - Stratified (maintain proportions, may not be opossible in multi-label)
+     - Weighted sampling (each data point has assigned probability isntead of uniform. e.g. recent data might be more important)
+     - Reservoir sampling (good for streaming data, leetcode question also.
+     - Important samploing (when main distribution not accessible/exensive. use proposal distribution. e.g. using old policy to calcualte rewards in reinforcemnet learning)
+5. Labels: label multiplicity when diff labels by annotaters. natural labels from data. natural label based on user behavior aka behavioral labels. can start with hand labels, natural labels or and explicit feedback.
+  - programmaetic labels (weak supervision, labelling  functions based on heuristics). could be keyword, regular exp, database lookups etc. can use multiple LFs. small hand labels used for guidance/evaluation. can be used in different projects. why ml? because LFs might not cover all samples so can use ML for such samples. Can also use this as a starting point for producitonizing ML while ground truth labels are collected.
+  - semi-supervision: various methods. can use ml to predict on unlabelled and then retraining on confident samples. repeat the process. OR, use KNN/clustering approach. OR purturb samples to create artificial samples. leave signifcant eval set and and then continue training the champion on all data.
+- transfer learning
+- acitve learner (a model) sends unlaballed samples to human annotators (less confiedent)
+7.  feedback loop length: sometimes controllable. shorter means faster but might be noisy.
+8. Class Imbalance:
+  - model might be stuck in non-optimal solution, won't find signal for rare class and/or the cost of misprediction for rare class might be more important. can use twophase learning (where we use original data for fine-tuninga fter training model with sampled/balanced data).
+  - under/over/both sampling or smote
+  - some argue we shouldn't fix class imbalance as deep NNs can learn patterns
+  - right evaluation metrics are important: accuracy/f1 might be high but misleading. AUC curve?  Accuracy might still be a good metric for a particular class. F1-related metrics focus on positive class. It is asseymetric as depends on what our "positive" class is.  ROC does not tell anything about negative class (use PR curve instead).
+  - Algorithmic methods. Modify cost (manually define cost matrix, or use class-balanced loss or focal loss (penalize model where it's more wrong). Ensemlbes can also prove robust.
+9. Data augmentation
+  - just like CV, NLP can benefit from augmentation (like templaing, or replacing words with synonyms, perturbation (which can also help make models robust to noise, adverserial attacks
+8. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
+9. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category
+10. NNs don't work well with unit variance.
+11. Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
+12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
+13. For time-series data, split by time to prevent leakage.
+14. Use statistics from train split for scaling, imputaiton etc. (even EDA)
+15. Groups (like records of same patient taken milliseconds apart) should be in same split.
+16. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
+17. Test performane should only be used for reporting, not for decision making.
+18. feature stores != feature definion management
+19. feature generalization to unseen data. e.g. commmend_id may be bad but user_id might be impportant.
+20. Shouldn't just remove a feature based on coverage. Should look at relationship with output.
+21. Feature scaling impacts gradient boosted trees
+22. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
+23. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
+24. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
+25. ML models can fail silently.
+26. Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
+27. Good practices to avoid problems. Start with simplest architecture (like one-layered RNN before expanding), overfit to training and evaluate on same (to make sure minimal loss achieved), set random seeds.
+28. Models with high bias may not improve from more training data but a high variance model might.
+29. Distributed training:
   - Data parallelism: split data and train models separaptely. reconcile gradients on central node. synchronous (have to wait) or asyncrhonous (update as they arrive). Async requires more time but when # of params is high, weight updates are sparse so staleness is less of an issue. Use smaller batch size on main worker node to even out compute requirements.
   - Model parallelism: handle different parts of the model on diff machines. If assigning diff layers of NN to diff machines, not really parallelism.
   - Pipeline parallelism: Reduce idle time when part of computation (micro-batches) is complete and passes results to other machine so it can start working.
