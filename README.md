@@ -1,6 +1,16 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 
+# Dataset Generation
+- Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
+- Some features (especially on-demand) may only come from raw data (might not make sense to make them a part of feature table e.g. trip_distance). T
+- On-demand features can be logged in UC.
+- Create training data using primary keys and timestamp to ensure point-in-time correctness
+- Can publish to an online store like Azure Cosmos DB for real-time inference
+
+# Transfer Learning
+- NNs learn latent features hierarchically. Can retrain weights of a model pre-trained on one domain for another. OR can use featurization to extract features for a new model.
+
 # Designing Machine Learning Systems (by Chip Huyen)
 1. Requirements of ML systems: reliability, scalability, maintainability, adaptability
 2. Types of ML problems:
@@ -55,7 +65,7 @@
 16. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
 17. Test performane should only be used for reporting, not for decision making.
 18. feature stores != feature definion management
-19. feature generalization to unseen data. e.g. commmend_id may be bad but user_id might be impportant.
+19. feature generalization to unseen data. e.g. commment_id may be bad but user_id might be impportant.
 20. Shouldn't just remove a feature based on coverage. Should look at relationship with output.
 21. Feature scaling impacts gradient boosted trees
 22. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
