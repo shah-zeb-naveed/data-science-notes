@@ -1,12 +1,18 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 
+# Recommendation Engine
+- collab filtering: similar users have simular interests. (memory-based, extension of KNN, user-user or item-item). model-based (SVD, large matrix split into 2 small then multiplied to get recommendations, or NN-based). user-user/item-item have different axis of similarities, custom weighted avg logic to get final recommendations.
+- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start)
+- hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
+
 # Dataset Generation
 - Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
 - Some features (especially on-demand) may only come from raw data (might not make sense to make them a part of feature table e.g. trip_distance). T
 - On-demand features can be logged in UC.
 - Create training data using primary keys and timestamp to ensure point-in-time correctness
 - Can publish to an online store like Azure Cosmos DB for real-time inference
+- Generate triplets (user, pos, neg) for recommendation engine.
 
 # Transfer Learning
 - NNs learn latent features hierarchically. Can retrain weights of a model pre-trained on one domain for another. OR can use featurization to extract features for a new model.
