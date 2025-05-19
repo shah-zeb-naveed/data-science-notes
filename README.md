@@ -2,9 +2,21 @@
 
 
 # Recommendation Engine
-- collab filtering: similar users have simular interests. (memory-based, extension of KNN, user-user or item-item). model-based (SVD, large matrix split into 2 small then multiplied to get recommendations, or NN-based). user-user/item-item have different axis of similarities, custom weighted avg logic to get final recommendations.
-- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start)
+- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. Cons: hand-engineer features
+
+- collab filtering: similar users have simular interests.
+- memory-based, extension of KNN, user-user or item-item).
+   - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations.
+- model-based (SVD, large matrix split into 2 small then multiplied to get recommendations. Also, NN-based).
+   - In SVD, can be done using SGD or WALS (alternately, solve U and V and match to A for error). Hard to include side features (but can extend interaction matrix to add one-hot encoded blocks) and new users/items (a WALS method exists to solve for new item embedding, or use heuristic e.g. avg embedding in a cateogry).
+   - Matrix factorization tends to recommend popular items.
+- Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training
+- Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair.
 - hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
+- Implicit (infered like watched) or explicit feedback (rating).
+- Common arch: Candidate generation (or multiple generators), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
+- Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
+- 
 
 # Dataset Generation
 - Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
