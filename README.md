@@ -1,6 +1,19 @@
 # Notes on Data Science, Machine Learning and Statistics
 
-# System Design
+# ML System Design
+- Clarify/frame/define scope in terms of usage/actors
+- Downstream business metrics (DAU, session time, etc.)
+- ML objective aligned
+- Non functional: scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
+- Modelling approaches
+- Break down complex problems (e.g. multi-stage recommender) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
+- 
+- Feature engineering, aggregated, delayed, raw, online features, precomputed embeddings, normalize (timestamp into UTC), PII (can group critical info) etc.
+- Label generation: heuristics, negative sampling (specific definition of a negative interaction), etc.
+- Balance dataset
+- deployment strategies, ci/cd
+- issues (cold start, etc.)
+- caching: cache features instead of predictions if entities are too many
 - REST: stateless, supports caching
 
 # Recommendation System Design
@@ -18,8 +31,8 @@
 - 
 
 # Recommendation Engine
+- normalize matrix by subtracting (user/item) bias using global/user/item avgs.
 - content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. Cons: hand-engineer features
-
 - collab filtering: similar users have simular interests.
 - memory-based, extension of KNN, user-user or item-item).
    - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations.
@@ -32,7 +45,7 @@
 - Implicit (infered like watched) or explicit feedback (rating).
 - Common arch: Candidate generation (or multiple generators). once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
 - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
-- 
+- Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
 
 # Dataset Generation
 - Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
@@ -129,21 +142,23 @@
 36. Problem with batch is recency (if users' preferences can change significantly), also need to know datapoints in advance.
 37. Can use feature store to ensure batch features used during training are equal to streaming features used in inference.
 38. Decrease inference latency by: compression, inference optimization, improving hardware
-39. Compression:
+39. Hyperparameter Tuning:
+    - Hyperopt, skopt: model-based sequential tuning
+40. Compression:
     - LoRa. high-dim tensors -> decompose to compact tensors. reduces number of parameters. e.g. compact convolution filters but not widely adopted yet.
     - Knowledge distillation -> teacher student (less data, faster, smaller) model. can also train both at the same time. both can have different architectures (tree vs NN).
     - Pruning: like removing sub-trees or zeroing params in NN (reduces # of non-zero params, reducing storage, improving computation). can introduce bias.
     - Quantization: trainiing (quantization-aware) or post-training in lower precision. If int (8 bits), it's called fixed precision. Quantization reduces memory footprint, storage requirements, faster computation. BUT means can only represent a smaller range of values, rounding/scaling up can result in errors, risk of overflowing/underflowing. Mixed-precision popular in traiing. Training in fixed not popular but standard in inference (like dege devices).
     - Input shape can be optimized for improving throughput and latency as well.
 
-40. Cloud easier to start but more costs, requires nettwork connectivity, have higher latency, more privacy concerns but on-edge might drain device power
-41. Compiling for hardware: Intermediate representatin is the middleman between framework and hardware. High-level, tuned, low-level IRs -> MACHINE CODE. IRs are computation graphs.
-42. Model optimization:
+42. Cloud easier to start but more costs, requires nettwork connectivity, have higher latency, more privacy concerns but on-edge might drain device power
+43. Compiling for hardware: Intermediate representatin is the middleman between framework and hardware. High-level, tuned, low-level IRs -> MACHINE CODE. IRs are computation graphs.
+44. Model optimization:
     - Compiled lower IR could be slow because different frameworks (pandas, pytorch etc) optimized differently. For optimizing, use compiles that support optimization. Local (set of ops) and global (entire comp. graph) optimization. Vectorization (instead of loop), parallelization (process input chunks), loop tiling (hadware dependent, change data access order to match memory layout), operator fusion (veritcally for merging sequential ops or horizontally for parallel ops that share same inputs to fuse ops to avoid redudant memory accesses). for exmaple, two consective 3 x 3 convs CBR (Convolution, bias, RELU) have a receptive field of 5 x 5.
     - Hand-designed fusion can be manual, depends on hardware and expertise. ML-based helps estimate cost by generating ground truth for cost estimation model and then predicting time for each sub-graph and then an algo determine the most optimal path to take.
     - In browsers, can use js but it's limited and very slow. WASM is an open-source standard which we can use to compile models. WASM is faster than js but still slow.
-43. Failures: Software system (deployment, downtime, harware, depency). ML-specific (train-serving skew, data/trends change over time,
-44. Degenerate feedback loops (where model outputs influence future system inputs). Especially common in cases of natural labels. That's popular movies keep getting more popular. Also known as  “exposure bias,” “popularity bias,” “filter bubbles,” and sometimes “echo chambers.”. Can magnify bias and lead to systems performing sub-optimally.
+45. Failures: Software system (deployment, downtime, harware, depency). ML-specific (train-serving skew, data/trends change over time,
+46. Degenerate feedback loops (where model outputs influence future system inputs). Especially common in cases of natural labels. That's popular movies keep getting more popular. Also known as  “exposure bias,” “popularity bias,” “filter bubbles,” and sometimes “echo chambers.”. Can magnify bias and lead to systems performing sub-optimally.
   - detect by measuring diversity of items. or bucketing items and measuring model performance. once online, if outputs become more homogenous, most liekly feedback loop.
   -  correct by:
     -  randomization to reduce homogeneity, like tiktok seeds traffic for a new video randomly to decide whether to promote/demote. improvement in diversity comes at a cost of accuracy. "Contextual bandits as an exploration strategy" can make recommendations more "fair" for content creators.
@@ -245,37 +260,32 @@
 - Effect sizes like Cohen's D are essentially differences. It's just that they are converted to standardized form using a same standardization (assuming it is same for both groups) or a pooled standard deviation (from both groups). This standardization is actually questionable sometimes. https://rpsychologist.com/cohend/
 - Chi-square independence of test: row percentage multiplied by column total (gives you expected frequency)
 
-# Evaluation Metrics
 
+# SQL
+- CTEs/Subqueries and Window functions is a must.
+- For funnel analysis/timeline of events, can use UNION ALL.
+- Think if self-join is needed.
 
+# Probability
 
-1. Classification
-
-TPR = Recall = Sensitivity = TP / ( TP + FN )
-
-Out of all the actual positives, how many got detected. 
-Maximizing TPR -> Minimizing FNR
-
-Precision = TP  / ( TP + FP )
-
-Out of the selected, how many are correct.
-
-TNR = Specificity = TN / ( TN + FP )
-Maximizing TNR -> Minimizing FPR
-
-Out of all the negative selected elements, how many are actually negative
-
-1 - Specificity = FPR = FP / ( FP + TN )
-
-ROC Curve: TPR vs FPR
-
-PR Curve: Precision vs Recall (TPR)
-
-- AUC can be negative: if a classifier performs even worse than a random classifier
-- Prefer PR-curves over ROC in cases where TNs are not of great interest and are huge thus skewing the results, for example, in Information Retrieval.
-
-2. ML
-
-http://rasbt.github.io/mlxtend/user_guide/evaluate/bias_variance_decomp/
-https://towardsdatascience.com/top-30-data-science-interview-questions-7dd9a96d3f5c
-https://towardsdatascience.com/over-100-data-scientist-interview-questions-and-answers-c5a66186769a#ba56
+- Arithmetic series (end - start) / step_size -> n_steps
+- Law of total probability: P(A) = P(A | S1) P(S1) + P(A | S2) P(S2) + ... (all partitions) pretty much what's used for marginal in bayes theorem
+  - depending on the situation, one of the Si's could be A itself 
+- Bayes Theorem: P(A | B) = ( P(B | A) . P(A) )/ P(A) - whenever some evidence/prior or observation is given
+- Conditional: P(A | B) = P (A and B) / P(B) - whenever a certain observatioin given
+- Bernolli Trial (single trial - two outcomes)
+- Binomial (# of successes in a series of Bernouli trials)
+- Multinomial if more than two outcomes (How many ways can you split 12 people into 3 teams of 4?)
+- Combinations nCr
+- For assignment problems, think about starting with initial number and reducing options along the way e.g. 10 ways * 9 ways * 8 .... or 12C4 . 8C4 . etc. or even probability (10/10 . 9/10... etc.)
+- Geometric Distribution, probability that success occurs at nth trial
+- p . (1-p)^(1-x)
+  - problems (how many rounds/games/children etc.)
+  - expected number of total rounds (1/p)
+  - expected nunmber of rounds before success (1/p) - 1
+- P(5A | B) = p(A|B)^5
+- Always gather data in variables including output, calculate inverse/complement probabilities, can assume generanl knowledge about fair coin/boy or girl, etc.
+- For games with dynamic rounds, visualize first set of branches, and assign p of original game. if multiple, can group as p^2.
+- For games that recursive after multiple rounds, think about markov chains (calculate steps starting that point onwards with offset indiating number of itinial steps, then for all possible branches write equations and solve them together)
+- Sampling from CDF (of a normal dist) is uniform (don't get it exactly but maybe talks about y-axis raange regardless of shape, view vertically)
+- Linearity of expectation: E(X) = E(X1) + E(X2) + ....
