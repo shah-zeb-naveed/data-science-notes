@@ -1,5 +1,21 @@
 # Notes on Data Science, Machine Learning and Statistics
 
+# System Design
+- REST: stateless, supports caching
+
+# Recommendation System Design
+- Capacity estimates: users/views
+- New items constantly added
+- recommendation(user_id) -> core function
+- database: items, users, caching
+- batch computation, precompute daily. BUT, wastes resources, daily too less
+- realtime: can store KNN/embeddings in index for fast retrieveal and then scoring
+- can use max-heap to efficientyl update the cached KNN list
+- User interactions fed to kafka, which can be input to a scoring model
+- precache user's last seen entities
+- use same server for data locality benefits
+- geospatial-index-like structure to store embeddings
+- 
 
 # Recommendation Engine
 - content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. Cons: hand-engineer features
@@ -14,7 +30,7 @@
 - Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair.
 - hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
 - Implicit (infered like watched) or explicit feedback (rating).
-- Common arch: Candidate generation (or multiple generators), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
+- Common arch: Candidate generation (or multiple generators). once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
 - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
 - 
 
