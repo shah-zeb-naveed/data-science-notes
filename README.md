@@ -1,13 +1,14 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 # ML System Design
-- Clarify/frame/define scope in terms of usage/actors
+- Clarify/frame/define scope in terms of usage/actors,
+- Functional requirements: how will it be used, real-time, latency/QPS, etc.
 - Downstream business metrics (DAU, session time, etc.)
 - ML objective aligned
 - Non functional: scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
 - Modelling approaches
 - Break down complex problems (e.g. multi-stage recommender) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
-- 
+
 - Feature engineering, aggregated, delayed, raw, online features, precomputed embeddings, normalize (timestamp into UTC), PII (can group critical info) etc.
 - Label generation: heuristics, negative sampling (specific definition of a negative interaction), etc.
 - Balance dataset
@@ -237,8 +238,12 @@
       - Differential privacy: protects individual while sharing group stats
     - Compactness vs fairness trade-off: compression might impact unfairly
   - use package slike AI 360 and fairlearn to detect and mitigate bias
-    
-
+51. Error Analysis:
+    - Use strategic approach to decide what to tackle first to get highest ROI. e.g. focus on strata giving most error, can further see what specific characterists
+    - estimate bias and variance helps determine next steps
+    - analyze errors between training/dev/test sets to determine if there's a variance problem, data mismatch or avoidable bias by comparing to human-level performance.
+    - chain of assumptions in ML: tuning params for lower training error, regularization/bigger train set for lower dev error, bigger dev set for lower test eror, change dev set or cost function for lower real world errors
+    - early stopping: one knob affects training and dev so Andrew Ng doesn't like it
 
  # Resources
 
