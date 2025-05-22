@@ -2,10 +2,10 @@
 
 # ML System Design
 - Clarify/frame/define scope in terms of usage/actors,
-- Functional requirements: how will it be used, real-time, latency/QPS, etc.
+- Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines etc.
+- Non functional: scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
 - Downstream business metrics (DAU, session time, etc.)
 - ML objective aligned
-- Non functional: scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
 - Modelling approaches
 - Break down complex problems (e.g. multi-stage recommender) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
 
@@ -129,7 +129,7 @@
   - Pipeline parallelism: Reduce idle time when part of computation (micro-batches) is complete and passes results to other machine so it can start working.
 25. Phases: pre-ML/heuristics, simple models, optimize simple, complex models
 26. When there's class imbalance, F1-score does not indicate how well model is doing as compared to random.
-27. Baselines: random baseline (uniform, label distribution or naive), heuristic, human or BAU,
+27. Baselines: random baseline (uniform, label distribution or naive), heuristic, human or BAU, SOTA/OS
 28. Evaluation Methods:
 29. Perturbation tests, invariance tests (changing sensitive info should not change output like gender, directional expectation tests for sanity checks, model calibration for actual probabilities, slice-based evaluations to detect bias, or to make sure critical groups are prioritized, or to detect upstream (e.g. latency from mobile users) issues. Find slices by heuristics, error analysis, slice finder (clustering-based techniques).
 
@@ -173,6 +173,8 @@
   - Can use summary stats but not a guaruantee. Use 2 sample test. Statistical != practical signf. Might only be worth worryinga about if diff detected with small sample size. E.g KS test but only works on 1D data.
   - Time-series shifts also possible, time window selection will make a different. should track data post production. Shorter intervals  can lead to "alert fatigue" but can help detect issues faster. Cummulitive can hide trends which sliding window stats can uncover.
   - Retrain using massive dataset in the hope issue is prevented and/or retrain at a certain cadence. Retraining can be stateless or fine-tuning. Feature selection can impact need for frequency of retraining. Can also divide model into sub-models where some are trained more frequent.
+  - update eval set (or continous monitoring) so recent data changes can be captured.
+  - change can be gradual/sudden. user data, generally has slower drift. businesses may change more rapidly.       
 45. Observability is part of monitoring. Log important metrics related to network (latency, throughput), hardware (cpu utilization, uptime), ml-related.
   - ML-related: raw inputs, features, predictions, accuracy. from harder to easier to monitor. from "less likely to be caused by human errors" to be more closer to business.
   - accuracy: explicit feedback or inferred/natural labels. if not ground truth, at least secondary metrics can help detect degradation.
@@ -185,6 +187,8 @@
   - Alerts - alert policy (trigger, duration, suppression), channels, description
   - Monitoring is about tracking outputs. Monitoring makes no gurantee it will help you find out what went wrong. Monitoring assumes its possible to run tests and let data pass through system to narrow down the problem. Observability makes a stronger assumption that internal states can be inferred using outputs. Allows more fine-grained metrics. Observability and Interpretability go hand-in-hand.
   - Monitoring/obs. is essentially passive.
+  - software metrics (ram, cpu, latency, qps), input metrics (feature distributions, missing), output metrics (# user repeat input, # user switches to typing, ctr, prediction dist etc.), at each step of ML/SW pipeline
+  - thresholds/alarms
 46. Continual learning:
   - about setting up infrastructure.
   - learning with every sample can lead to catastrophic forgetting. less efficient as hardware designed for batch processing, unable to exploid data parallelism. instead update with micro-batch (task dependent).
@@ -240,10 +244,13 @@
   - use package slike AI 360 and fairlearn to detect and mitigate bias
 51. Error Analysis:
     - Use strategic approach to decide what to tackle first to get highest ROI. e.g. focus on strata giving most error, can further see what specific characterists
+    - collecting more data is expensive so do error analysis to confirm if needed/prioritized.
     - estimate bias and variance helps determine next steps
-    - analyze errors between training/dev/test sets to determine if there's a variance problem, data mismatch or avoidable bias by comparing to human-level performance.
+    - analyze errors between training/dev/test sets to determine if there's a variance problem, data mismatch or avoidable bias by comparing to human-level performance. irreducible = bayes error.
     - chain of assumptions in ML: tuning params for lower training error, regularization/bigger train set for lower dev error, bigger dev set for lower test eror, change dev set or cost function for lower real world errors
     - early stopping: one knob affects training and dev so Andrew Ng doesn't like it
+    - test set accuracy is not enough. set of disproportionately important examples needs to perform really well.
+52. Degrees of automation: human, shadow, human in the loop (ai assistance (ui to hihglight), partial auto), full automation
 
  # Resources
 
