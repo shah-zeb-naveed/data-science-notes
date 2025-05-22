@@ -93,6 +93,7 @@
   - semi-supervision: various methods. can use ml to predict on unlabelled and then retraining on confident samples. repeat the process. OR, use KNN/clustering approach. OR purturb samples to create artificial samples. leave signifcant eval set and and then continue training the champion on all data.
 - transfer learning
 - acitve learner (a model) sends unlaballed samples to human annotators (less confiedent)
+- 
 7.  feedback loop length: sometimes controllable. shorter means faster but might be noisy.
 8. Class Imbalance:
   - model might be stuck in non-optimal solution, won't find signal for rare class and/or the cost of misprediction for rare class might be more important. can use twophase learning (where we use original data for fine-tuninga fter training model with sampled/balanced data).
@@ -102,14 +103,19 @@
   - Algorithmic methods. Modify cost (manually define cost matrix, or use class-balanced loss or focal loss (penalize model where it's more wrong). Ensemlbes can also prove robust.
 9. Data augmentation
   - just like CV, NLP can benefit from augmentation (like templaing, or replacing words with synonyms, perturbation (which can also help make models robust to noise, adverserial attacks
+  - analyze error rate to decide what kinds of inputs need augmentation, e.g. different types of noise in the background
+  - GANs can be used to synthesize data
+  - Adding data might hurt if overrepresent noisy/synethetic data and model is simple (high bias)
 8. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
 9. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category
 10. NNs don't work well with unit variance.
 11. Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
 12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
-13. For time-series data, split by time to prevent leakage.
-14. Use statistics from train split for scaling, imputaiton etc. (even EDA)
-15. Groups (like records of same patient taken milliseconds apart) should be in same split.
+13. Split:
+    - For time-series data, split by time to prevent leakage.
+    - Use statistics from train split for scaling, imputaiton etc. (even EDA)
+    - Groups (like records of same patient taken milliseconds apart) should be in same split.
+    - explicitly ensure classes have same distribution in test set as train
 16. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
 17. Test performane should only be used for reporting, not for decision making.
 18. feature stores != feature definion management
@@ -250,7 +256,13 @@
     - chain of assumptions in ML: tuning params for lower training error, regularization/bigger train set for lower dev error, bigger dev set for lower test eror, change dev set or cost function for lower real world errors
     - early stopping: one knob affects training and dev so Andrew Ng doesn't like it
     - test set accuracy is not enough. set of disproportionately important examples needs to perform really well.
+    - While starting any project, do sanity checks. Try to overfit on a small training set.
+    - HLP (human level performance) can't beat that. what if ground truth for HLP is itself by human
 52. Degrees of automation: human, shadow, human in the loop (ai assistance (ui to hihglight), partial auto), full automation
+
+53. Data-centric > Model-centric
+54. PoC: OK for not focusing on reproducability
+55. Data pipelines: provenance (where it comes from) and lineage (sequence of steps), metadata
 
  # Resources
 
