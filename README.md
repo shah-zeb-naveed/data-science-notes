@@ -1,11 +1,11 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 # ML System Design
-- Clarify/frame/define scope in terms of usage/actors,
+- Clarify/frame/define scope in terms of usage/actors. Integration of output with system.
 - Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines etc.
-- Non functional: scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
+- Non functional: which components will overload, scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
 - Downstream business metrics (DAU, session time, etc.)
-- ML objective aligned
+- ML objective aligned. Offline vs Online metrics established.
 - Modelling approaches
 - Break down complex problems (e.g. multi-stage recommender) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
 
@@ -14,8 +14,9 @@
 - Balance dataset
 - deployment strategies, ci/cd
 - issues (cold start, etc.)
-- caching: cache features instead of predictions if entities are too many
+- caching: cache features instead of predictions if entities are too many. embeddings often cached in key-value store.
 - REST: stateless, supports caching
+- Inference: aggregator service/load balancer. can also route to different model based on query e.g. ml model for ios vs android
 
 # Recommendation System Design
 - Capacity estimates: users/views
@@ -44,7 +45,7 @@
 - Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair.
 - hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
 - Implicit (infered like watched) or explicit feedback (rating).
-- Common arch: Candidate generation (or multiple generators). once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
+- Common arch: Candidate generation (or multiple generators). once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
 - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
 - Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
 
@@ -81,6 +82,7 @@
    - ELT instead of ETL so transformations done by apps that pull from warehouses and ELT process doesn't care about source schema changes
    - Data passing b/w services (aka request driven). Having different services for different components of the company's ML needs.
    - data broadcasted to a broker (called events in event-driven even hub)
+   - column oriented for training pipeline keeps costs low and high throughput.
 4. Sampling
      - Non-probaiblity sampling (convenience, snowball (start small and then increase), juedgement (experts decide what to use), quota sampling (custom defined groups). Signifciant selectio bias.
      - Simple random (minoirty class might be sampled out compltely)
@@ -88,6 +90,9 @@
      - Weighted sampling (each data point has assigned probability isntead of uniform. e.g. recent data might be more important)
      - Reservoir sampling (good for streaming data, leetcode question also.
      - Important samploing (when main distribution not accessible/exensive. use proposal distribution. e.g. using old policy to calcualte rewards in reinforcemnet learning)
+     - for balancing, keep test/val set intact
+5. Features:
+   - onehot encoder: high compute/dims for high cardinality
 5. Labels: label multiplicity when diff labels by annotaters. natural labels from data. natural label based on user behavior aka behavioral labels. can start with hand labels, natural labels or and explicit feedback.
   - programmaetic labels (weak supervision, labelling  functions based on heuristics). could be keyword, regular exp, database lookups etc. can use multiple LFs. small hand labels used for guidance/evaluation. can be used in different projects. why ml? because LFs might not cover all samples so can use ML for such samples. Can also use this as a starting point for producitonizing ML while ground truth labels are collected.
   - semi-supervision: various methods. can use ml to predict on unlabelled and then retraining on confident samples. repeat the process. OR, use KNN/clustering approach. OR purturb samples to create artificial samples. leave signifcant eval set and and then continue training the champion on all data.
@@ -107,9 +112,12 @@
   - GANs can be used to synthesize data
   - Adding data might hurt if overrepresent noisy/synethetic data and model is simple (high bias)
 8. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
-9. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category
+9. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category. Or can group into "Other".
+10. Feature crossing: like lat x long to define city blocks. hashing is more ciritcal now.
+11. can apply clipping before scaling/min-max.
 10. NNs don't work well with unit variance.
 11. Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
+12. d=(D)^1/4 is one heuristic for embedding
 12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
 13. Split:
     - For time-series data, split by time to prevent leakage.
@@ -125,6 +133,9 @@
 22. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
 23. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
 24. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
+25. Loss Functions:
+   - normalized log loss (baseline avg. prediction) for rare events.
+   - quantile loss instead of predicting average (expected value) for over/under-estimating
 25. ML models can fail silently.
 26. Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
 27. Good practices to avoid problems. Start with simplest architecture (like one-layered RNN before expanding), overfit to training and evaluate on same (to make sure minimal loss achieved), set random seeds.
@@ -149,9 +160,9 @@
 36. Problem with batch is recency (if users' preferences can change significantly), also need to know datapoints in advance.
 37. Can use feature store to ensure batch features used during training are equal to streaming features used in inference.
 38. Decrease inference latency by: compression, inference optimization, improving hardware
-39. Hyperparameter Tuning:
+40. Hyperparameter Tuning:
     - Hyperopt, skopt: model-based sequential tuning
-40. Compression:
+41. Compression:
     - LoRa. high-dim tensors -> decompose to compact tensors. reduces number of parameters. e.g. compact convolution filters but not widely adopted yet.
     - Knowledge distillation -> teacher student (less data, faster, smaller) model. can also train both at the same time. both can have different architectures (tree vs NN).
     - Pruning: like removing sub-trees or zeroing params in NN (reduces # of non-zero params, reducing storage, improving computation). can introduce bias.
