@@ -2,7 +2,7 @@
 
 # ML System Design
 - Clarify/frame/define scope in terms of usage/actors. Integration of output with system.
-- Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines etc.
+- Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines, SLAs etc. Incorporating new users/items often a consideration.
 - Non functional: which components will overload, scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
 - Downstream business metrics (DAU, session time, etc.)
 - ML objective aligned. Offline vs Online metrics established.
@@ -16,7 +16,19 @@
 - issues (cold start, etc.)
 - caching: cache features instead of predictions if entities are too many. embeddings often cached in key-value store.
 - REST: stateless, supports caching
-- Inference: aggregator service/load balancer. can also route to different model based on query e.g. ml model for ios vs android
+- Inference: aggregator service/load balancer. can also route to different model based on query e.g. ml model for ios vs android. multiple application servers behind load balancer, in case of multi-phase models, manage flow.
+- Scale app server and model services separately
+- each model service as a pod on k8s for autoscaling. kube-proxy enables inter-service communication
+- retrain multiple times per day depending on...
+- common latency target: 200ms (total). # of components might mean 50 ms per service
+- Time-based split avoids data leakage and unbiased estimate. More like backtesting. Simulate a production system. Can give an idea of how frequentyl to re-train
+- Regression (linear/logistic) can obviously be implemented by an MLP
+- Archive older data in cold storage
+- CTR metric is an online/business metric. Often 1% so expect negative samples.
+- practically, training data duration can be picked using experimentation.
+- thiink about a parent service which might call the ML service. e.g. a general search service calling ranking service.
+- inverted index or collab filtering-like 1st phase for quick fast retrieval
+- log model output and get inferred (implicit or explicit) froma nother DB. Feed back to training data for subseuquent runs.
 
 # Recommendation System Design
 - Capacity estimates: users/views
@@ -48,6 +60,7 @@
 - Common arch: Candidate generation (or multiple generators). once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
 - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
 - Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
+- Bootstrapping by ranking by chronological is fine by trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
 
 # Dataset Generation
 - Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
@@ -134,7 +147,7 @@
 23. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
 24. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
 25. Loss Functions:
-   - normalized log loss (baseline avg. prediction) for rare events.
+   - normalized log loss (baseline avg. prediction) for rare events (makes less sensitive to background CTR)
    - quantile loss instead of predicting average (expected value) for over/under-estimating
 25. ML models can fail silently.
 26. Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
