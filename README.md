@@ -1,15 +1,21 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 # ML System Design
-- Clarify/frame/define scope in terms of usage/actors. Integration of output with system.
+- Clarify/frame/define scope in terms of usage/actors (including context). Integration of output with system. current state/bootstrapping.
 - Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines, SLAs etc. Incorporating new users/items often a consideration.
-- Non functional: which components will overload, scalable, available, latency, observability (monitoring, tracing, logging, MLOps)
+- Non functional: which components will overload, scalable (ask or assume # of datapoints in each stage), available, latency (100 or 500), observability (monitoring, tracing, logging, MLOps)
+   - perf. and capacity, both during training time (data size/capacity/), inference (SLA)
+   - complexities of ML models (training, inference, sample (how hungry it is))
+   - distribute workload (e.g. N documents to be ranked) to multiple model shards to meet SLA but resources are limited and comm will have its own latency
+   - funnel approach (increasing model complexity down the road helps achieve SLA). also helps in error analysis.
+   - 
+- ML objective aligned. Offline vs Online (component-wise e.g. ndcg and end-to-end/downstream system metrics e.g. user's engagement metrics.
 - Downstream business metrics (DAU, session time, etc.)
-- ML objective aligned. Offline vs Online metrics established.
 - Modelling approaches
-- Break down complex problems (e.g. multi-stage recommender) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
+- Break down complex problems (e.g. multi-stage recommender) (funnel approach) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
 
 - Feature engineering, aggregated, delayed, raw, online features, precomputed embeddings, normalize (timestamp into UTC), PII (can group critical info) etc.
+   - crowdsourcing, existing system, SMEs, or build a product in a way that collects training data
 - Label generation: heuristics, negative sampling (specific definition of a negative interaction), etc.
 - Balance dataset
 - deployment strategies, ci/cd
@@ -104,6 +110,9 @@
      - Reservoir sampling (good for streaming data, leetcode question also.
      - Important samploing (when main distribution not accessible/exensive. use proposal distribution. e.g. using old policy to calcualte rewards in reinforcemnet learning)
      - for balancing, keep test/val set intact
+5. Training data:
+   - drop useless data (e.g. bot impressions)
+   - remove bias (e.g. popularity) bu exploration/exploitation strategy, choosing the right metrics, etc.  
 5. Features:
    - onehot encoder: high compute/dims for high cardinality
 5. Labels: label multiplicity when diff labels by annotaters. natural labels from data. natural label based on user behavior aka behavioral labels. can start with hand labels, natural labels or and explicit feedback.
@@ -119,24 +128,33 @@
   - some argue we shouldn't fix class imbalance as deep NNs can learn patterns
   - right evaluation metrics are important: accuracy/f1 might be high but misleading. AUC curve?  Accuracy might still be a good metric for a particular class. F1-related metrics focus on positive class. It is asseymetric as depends on what our "positive" class is.  ROC does not tell anything about negative class (use PR curve instead).
   - Algorithmic methods. Modify cost (manually define cost matrix, or use class-balanced loss or focal loss (penalize model where it's more wrong). Ensemlbes can also prove robust.
+10. Transfer learning:
+    - extract layers and use as features, train a few layers (if less data and more commonolaties), train more layers or train entire netowrk by warm starting with pre-trained model
 9. Data augmentation
   - just like CV, NLP can benefit from augmentation (like templaing, or replacing words with synonyms, perturbation (which can also help make models robust to noise, adverserial attacks
   - analyze error rate to decide what kinds of inputs need augmentation, e.g. different types of noise in the background
-  - GANs can be used to synthesize data
+  - GANs can be used to synthesize data e.g. converint sunny to rainy
   - Adding data might hurt if overrepresent noisy/synethetic data and model is simple (high bias)
 8. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
 9. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category. Or can group into "Other".
 10. Feature crossing: like lat x long to define city blocks. hashing is more ciritcal now.
 11. can apply clipping before scaling/min-max.
 10. NNs don't work well with unit variance.
-11. Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
-12. d=(D)^1/4 is one heuristic for embedding
+11. Embeddings:
+    - project item/user in same space.
+    - Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
+    - d=(D)^1/4 is one heuristic for embedding
+    - Contextual: ELMo (bi-RNN), BERT (bi-Trans)
+    - task-based embedding specialized but requires more samples/compute
+    
 12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
 13. Split:
     - For time-series data, split by time to prevent leakage.
     - Use statistics from train split for scaling, imputaiton etc. (even EDA)
     - Groups (like records of same patient taken milliseconds apart) should be in same split.
+    - make sure patterns like seasonality are captures within each set
     - explicitly ensure classes have same distribution in test set as train
+    - 
 16. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
 17. Test performane should only be used for reporting, not for decision making.
 18. feature stores != feature definion management
@@ -237,6 +255,8 @@
  - if updated model on new data distribution, test on recent data "backtesting" in "addition" to static test set. recent data could be corrupted.
  - shadow deployment: expensive coz doubles inference cost
  - a/b testing: if model 1 (A and B) is upstream dor model 2, then keep switching A and B (like on alternating days). ensure randomness in traffic routing. calculate sample size based on power analysis (MDE, alpha rate, power or 1-beta, expected variance). Historic growth will define how long to run the experiment for. Error rate (0.05) means we might just pick a wrong model by chance. also possible in batch predictions. it is stateless (does not consider model's current performance).
+ - back testing: b/a test to validate a/b results if it's too optimistic
+ - long-running a/b test: to measure user retention. can also be done via backtest???
  - Canary release (safe-rollout): simialr to A/B testing but doesn't have to be random. e.g. releasing to less critical/low risk markets first.
  - Interleaving, instead of spliting user groups, serve both models to each user and measure user preferences. May not be tied to actual core performance metrics (not sure what was meant by this statement). Need to make sure there is no position bias, by encoding position or by picking A or B with equal probability. Just like drafting process in sports.
  - bandits: each model a slot machine. requests served to the model with best current performance while also exploring along the way. maximizing predicition accuracy for users. requires online, preferable short/explicit feedback, a mechanism to keep track of each model's current performance and routing requests. similar to exploration-exploitation strategy in reinforcement leanring. e.g. e-greedy. Other exploration algos include Thompson Sampling, Upper Confidence Bound.
