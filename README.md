@@ -1,7 +1,7 @@
 # Notes on Data Science, Machine Learning and Statistics
 
 # ML System Design
-- Clarify/frame/define scope in terms of usage/actors (including context). Integration of output with system. current state/bootstrapping.
+- Clarify/frame/define scope in terms of usage/actors (including input, context). Integration of output with system. current state/bootstrapping.
 - Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines, SLAs etc. Incorporating new users/items often a consideration.
 - Non functional: which components will overload, scalable (ask or assume # of datapoints in each stage), available, latency (100 or 500), observability (monitoring, tracing, logging, MLOps)
    - perf. and capacity, both during training time (data size/capacity/), inference (SLA)
@@ -36,6 +36,21 @@
 - inverted index or collab filtering-like 1st phase for quick fast retrieval
 - log model output and get inferred (implicit or explicit) froma nother DB. Feed back to training data for subseuquent runs.
 
+# Seach Engine
+- Define CTR with high dwell time to remove unsuccessful clicks
+- time/queries to success indicates success (lower per session).
+- can assign negative relevance score to a document to mark irrelevant document
+- query rewriting (spell, expansion vs relaxation to simplify), understnading (intent e.g. local, info, navigational vs informational,), blender
+- 1st stage selctor focused on recall. can do weighted scoring of personalization, doc popularity, intent match, terms match. Google's pagerank has lower weightage and mostly dominated by ML. can assign weights manually or learn by experimentation or learn through ML.
+- ranker itself good be composed of two increasingly complex models/stages.
+- actors: searcher (personas), query (intent, historical engagement), context (time/recency, previous queries), doc (pagerank/backlinks, local/global engagement radius   ), query-searcher, query-doc (text match with content/title/metadata, uni/bigram, tfidf, engagement etc.), searcher-doc (previously accessed, distance for local intent)
+- training data generation: estimate how much training data can be gathered.
+   - pointwise approach: single doc's relevancy (true ranking at a time). or can "approximate" as relevance/irr using binary classification.  
+      - random negative example (result on 50th page)
+   - pairwise: rank a pair of documents correctly
+      - human labellers or use historic engagement and infer labels using heuristic.
+- LTR (leanring to rank: using supervised ML). stage 1: pointwise, simple logistic/tree-based. stage 2: pairwise. lambdaMart or LambdaRank. focus is on assigning rank scores such that correct order is determined.
+  
 # Recommendation System Design
 - Capacity estimates: users/views
 - New items constantly added
