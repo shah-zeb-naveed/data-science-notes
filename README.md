@@ -9,11 +9,12 @@
    - distribute workload (e.g. N documents to be ranked) to multiple model shards to meet SLA but resources are limited and comm will have its own latency
    - funnel approach (increasing model complexity down the road helps achieve SLA). also helps in error analysis.
    - 
-- ML objective aligned. Offline vs Online (component-wise e.g. ndcg and end-to-end/downstream system metrics e.g. user's engagement metrics.
+- ML objective aligned. Offline vs Online (component-wise e.g. ndcg and end-to-end/downstream system metrics e.g. user's engagement metrics. Crucial to identify/track negative actions/metrics. Consider normalization of metric by e.g. daily active users.
 - Downstream business metrics (DAU, session time, etc.)
 - Modelling approaches
-- Break down complex problems (e.g. multi-stage recommender) (funnel approach) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
-
+   - Objectives can be broken into multiple models. Better to have sperate models and then weight instead of predicting the aggregate to keep control.
+   - Break down complex problems (e.g. multi-stage recommender) (funnel approach) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
+   - introduce non-linearities in linear models using hand-engineering feature interactions 
 - Feature engineering, aggregated, delayed, raw, online features, precomputed embeddings, normalize (timestamp into UTC), PII (can group critical info) etc.
    - crowdsourcing, existing system, SMEs, or build a product in a way that collects training data
 - Label generation: heuristics, negative sampling (specific definition of a negative interaction), etc.
@@ -35,6 +36,24 @@
 - thiink about a parent service which might call the ML service. e.g. a general search service calling ranking service.
 - inverted index or collab filtering-like 1st phase for quick fast retrieval
 - log model output and get inferred (implicit or explicit) froma nother DB. Feed back to training data for subseuquent runs.
+
+# Feed Design
+- weighted metric for type of engagements. better to predict indivudal eventually to be able to fine-tune the knob
+- selection:
+   - new tweets, unseen tweets, seen tweets with increased engagement, limit recency, tweets by network, suggested and friends' interactions
+- actors:
+   - user, author, content, context, user-author similarity (percentage to nromalize), user-content, 
+- features:
+   - similarity, interaction, influence, relationship, interests, etc.
+- Modelling:
+   - predict prob of engagement
+   - MTL model to predict multiple types of engagement
+   - can get overall model's score and feed as feature to individual models
+   - can stack models in parallel and use a simpler model on the outputs
+   - funnel approach
+- diversity, repetitiveness (content/user) penality - heuristics based like subtract 0.01
+- experimentation: check gain in user engagement metric and p-value
+- 
 
 # Seach Engine
 - Define CTR with high dwell time to remove unsuccessful clicks
@@ -125,11 +144,14 @@
      - Reservoir sampling (good for streaming data, leetcode question also.
      - Important samploing (when main distribution not accessible/exensive. use proposal distribution. e.g. using old policy to calcualte rewards in reinforcemnet learning)
      - for balancing, keep test/val set intact
+        - balancing can result in uncalibrating probabilities so use with caution
+        - 
 5. Training data:
    - drop useless data (e.g. bot impressions)
    - remove bias (e.g. popularity) bu exploration/exploitation strategy, choosing the right metrics, etc.  
 5. Features:
    - onehot encoder: high compute/dims for high cardinality
+   - time decay and multiple windows to capture short term, long term, recency patterns
 5. Labels: label multiplicity when diff labels by annotaters. natural labels from data. natural label based on user behavior aka behavioral labels. can start with hand labels, natural labels or and explicit feedback.
   - programmaetic labels (weak supervision, labelling  functions based on heuristics). could be keyword, regular exp, database lookups etc. can use multiple LFs. small hand labels used for guidance/evaluation. can be used in different projects. why ml? because LFs might not cover all samples so can use ML for such samples. Can also use this as a starting point for producitonizing ML while ground truth labels are collected.
   - semi-supervision: various methods. can use ml to predict on unlabelled and then retraining on confident samples. repeat the process. OR, use KNN/clustering approach. OR purturb samples to create artificial samples. leave signifcant eval set and and then continue training the champion on all data.
@@ -161,6 +183,7 @@
     - d=(D)^1/4 is one heuristic for embedding
     - Contextual: ELMo (bi-RNN), BERT (bi-Trans)
     - task-based embedding specialized but requires more samples/compute
+    - take inspiration from word2vec -> doc2vec. items belonging to a user can be averaged to get user embeddingf
     
 12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
 13. Split:
@@ -169,7 +192,7 @@
     - Groups (like records of same patient taken milliseconds apart) should be in same split.
     - make sure patterns like seasonality are captures within each set
     - explicitly ensure classes have same distribution in test set as train
-    - 
+    - remember to retrain on all data before deployment/experimentation
 16. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
 17. Test performane should only be used for reporting, not for decision making.
 18. feature stores != feature definion management
