@@ -85,6 +85,11 @@
 - 
 
 # Recommendation Engine
+- model as classification problem. regression if predicitn grating.
+- metrics:
+   - mAP., relevant/or not, mean of all users, take average precision at k (where relevant).
+   - mAR. same calculation for recall
+   - f1 based off mAP and mAR
 - normalize matrix by subtracting (user/item) bias using global/user/item avgs.
 - content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. Cons: hand-engineer features
 - collab filtering: similar users have simular interests.
@@ -96,8 +101,15 @@
 - Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training
 - Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair.
 - hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
-- Implicit (infered like watched) or explicit feedback (rating).
-- Common arch: Candidate generation (or multiple generators). once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
+- Implicit (infered like watched) or explicit feedback (rating). Explicit feedback can be biased.
+- Common arch: Candidate generation (or multiple generators)
+   - focus on recall. trending, user interests, genre etc.
+- ranker:
+   - focus on precision, ranking
+- actors: 
+   - user (queries, embedding), movies (genre, recency, actors, soundtracks, length), user-movies/genre (historical engagement, similarity), context (time, device, geography), trends, diff. time intervals for metrics
+   - 
+- . once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
 - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
 - Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
 - Bootstrapping by ranking by chronological is fine by trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
