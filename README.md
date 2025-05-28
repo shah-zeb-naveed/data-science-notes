@@ -18,6 +18,10 @@
 - Feature engineering, aggregated, delayed, raw, online features, precomputed embeddings, normalize (timestamp into UTC), PII (can group critical info) etc.
    - crowdsourcing, existing system, SMEs, or build a product in a way that collects training data
 - Label generation: heuristics, negative sampling (specific definition of a negative interaction), etc.
+   - often "middle" examples that we are uncertain about or have weak signals can be ignored.
+- training dataset:
+   - decide timespan based on problem making assumptions to make sure enoguh data/patterns is captured
+- embedding generation: upstream model, part of the neural network (dynamically generated (activations) or using weights (static)), trained separately with positive/negative pair; doc2vec and word2vec approach (embedding by averaging and then cosine), PCA over one-hot, node2vec for graphs
 - Balance dataset
 - deployment strategies, ci/cd
 - issues (cold start, etc.)
@@ -42,7 +46,7 @@
 - selection:
    - new tweets, unseen tweets, seen tweets with increased engagement, limit recency, tweets by network, suggested and friends' interactions
 - actors:
-   - user, author, content, context, user-author similarity (percentage to nromalize), user-content, 
+   - user, author, content, context, user-author similarity (percentage to nromalize, avg. tfidf/NN embedding of users, social similarity (overlap ), user-content, 
 - features:
    - similarity, interaction, influence, relationship, interests, etc.
 - Modelling:
@@ -62,7 +66,7 @@
 - query rewriting (spell, expansion vs relaxation to simplify), understnading (intent e.g. local, info, navigational vs informational,), blender
 - 1st stage selctor focused on recall. can do weighted scoring of personalization, doc popularity, intent match, terms match. Google's pagerank has lower weightage and mostly dominated by ML. can assign weights manually or learn by experimentation or learn through ML.
 - ranker itself good be composed of two increasingly complex models/stages.
-- actors: searcher (personas), query (intent, historical engagement), context (time/recency, previous queries), doc (pagerank/backlinks, local/global engagement radius   ), query-searcher, query-doc (text match with content/title/metadata, uni/bigram, tfidf, engagement etc.), searcher-doc (previously accessed, distance for local intent)
+- actors: searcher (personas), query (intent, historical engagement), context (time/recency, previous queries), doc (pagerank/backlinks, local/global engagement radius   ), query-searcher, query-doc (text match with content/title/metadata, uni/bigram, tfidf (normalized), engagement etc.), searcher-doc (previously accessed, distance for local intent)
 - training data generation: estimate how much training data can be gathered.
    - pointwise approach: single doc's relevancy (true ranking at a time). or can "approximate" as relevance/irr using binary classification.  
       - random negative example (result on 50th page)
@@ -86,20 +90,22 @@
 
 # Recommendation Engine
 - model as classification problem. regression if predicitn grating.
+   - can re--weight training samples to support business objective to increase session watch time
+   - can use all methods and generate candidates. we can also use their raw scores (although not comparable) as features to our 1st stage ranker
 - metrics:
    - mAP., relevant/or not, mean of all users, take average precision at k (where relevant).
    - mAR. same calculation for recall
    - f1 based off mAP and mAR
 - normalize matrix by subtracting (user/item) bias using global/user/item avgs.
-- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. Cons: hand-engineer features
-- collab filtering: similar users have simular interests.
+- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. can dot b/w items or build average embedding of user and then find closest items. Cons: hand-engineer features.
+- collab filtering: similar users have simular interests. no domain/hand-engineered features necessary.
 - memory-based, extension of KNN, user-user or item-item).
-   - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations.
+   - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations. user prefernces change rapidly so harder to scale. item-based can be computed offline and served without frequent re-training. sparse matrices, cold start an issue.
 - model-based (SVD, large matrix split into 2 small then multiplied to get recommendations. Also, NN-based).
    - In SVD, can be done using SGD or WALS (alternately, solve U and V and match to A for error). Hard to include side features (but can extend interaction matrix to add one-hot encoded blocks) and new users/items (a WALS method exists to solve for new item embedding, or use heuristic e.g. avg embedding in a cateogry).
    - Matrix factorization tends to recommend popular items.
-- Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training
-- Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair.
+- Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training. cold start for new items I think?? what if freeze other embeddings and update new movies?
+- Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair. cold start: lack of sufficient examples to learn embeddings.
 - hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
 - Implicit (infered like watched) or explicit feedback (rating). Explicit feedback can be biased.
 - Common arch: Candidate generation (or multiple generators)
@@ -107,8 +113,8 @@
 - ranker:
    - focus on precision, ranking
 - actors: 
-   - user (queries, embedding), movies (genre, recency, actors, soundtracks, length), user-movies/genre (historical engagement, similarity), context (time, device, geography), trends, diff. time intervals for metrics
-   - 
+   - user (queries, embedding), movies (genre, recency, actors, soundtracks, length), user-movies/genre (historical engagement, similarity), context (time, device, geography), trends, diff. time intervals for metrics, user-actor histogram (normalized)
+   - embeddings of past interaction items can be averaged and fed as a feature into a NN model for ranker. both search terms and watched movies.
 - . once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
 - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
 - Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
