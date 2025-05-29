@@ -41,6 +41,52 @@
 - inverted index or collab filtering-like 1st phase for quick fast retrieval
 - log model output and get inferred (implicit or explicit) froma nother DB. Feed back to training data for subseuquent runs.
 
+# Entity Linking
+1. NER (Recognize "terms"/"mentions")
+2. Disambiguation (based off wikipedia e.g)
+3. linker (to "entitiy" in knowledgebase)
+4. Offline: precision/recall/f1. disamb: precision/accuracy = total correct / total entities detected. overall f1-score metric (define FP,FN,TP,TN) for whole system. Macro-avg might be useful if care about class-based or class/entity is imbalanced
+5. Online metric: guage perf. of downstream system. 
+6. BIO tagging scheema (beginning, inner, non-netity)
+7. Downstream systems:
+   - search engines
+   - VAs
+   - the % sesssion/questions success rate
+8. Arch:
+   - NER
+   - Candidate generation (form knowledgebase)
+   - disambiguate (link)
+- Training DATA
+   - OS
+   - Hand-label
+- Modelling:
+   - context needs to be accounted. bi-directional.
+   - ELMo.
+      - either take char-level CNN or init with word2vec static embeddings for words. then train forward and backward layers independetly.
+      - resulting word embeddings averaged.
+      - can't use simulatenously both direcions.
+      - char-level cnn method has advantage of learning "learn" and "learning" similarity and OOV
+   - BERT:
+      - masking problem solution??? understand
+      - case/uncased decide based on problem. distil/base ones are faster for inferenace
+   - use token-level embeddings as features to a multi-class classifier. Can also fine-tune embeddings based on NER dataset if data is huge and compute/training time permits.
+   - disamb: candidate gen. focus on recall
+      - indexing:
+         - nicknames/alias/subwords/abbrev.
+         - anchor text in HTML
+         - embedding: for an exisitng index, embed all words in the index. then use/build a model that brings abbrev/alias/syns belonging to same entity together. then use knn to expand index.
+   - linking: probability score for each candidate and select highest. focus on precision
+      - inputs:
+         - embedding for target word
+         - then avg of all tokens (can also have separate for entities only) in sentence
+         - type of entity (and other detectedn entities' histogram)
+         - sentence mebdding of the candidate entity (from knowledgebase)
+         - entitiy priors:
+         - P (candiadate | term, type, sent)
+   - example: [perplexity simulated example](https://www.perplexity.ai/search/help-me-understand-this-the-pr-yR65K3NDSPy3fyeqtHG_NQ)
+   - 
+
+
 # Feed Design
 - weighted metric for type of engagements. better to predict indivudal eventually to be able to fine-tune the knob
 - selection:
