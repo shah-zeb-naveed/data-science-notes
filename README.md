@@ -41,6 +41,20 @@
 - inverted index or collab filtering-like 1st phase for quick fast retrieval
 - log model output and get inferred (implicit or explicit) froma nother DB. Feed back to training data for subseuquent runs.
 
+# Ads prediction
+- search engine,  sponsored products (query part of contexts), social media
+- offline:
+   - AUC is calibration insensitive. multiply probs by 2, AUC won't change so need log loss.
+   - need calibrated scores in ads.
+- online:
+   - revenue. bid -> display -> if user clicks -> charge business -> make money. 
+   - successful sessions
+   - returning users
+- action rate (configured by advertiser: click rate, downstream action rate etc)
+- counter metrics (hide ad, never see, report)
+- actors: user, publisher, item, context (query)
+- 
+
 # Entity Linking
 1. NER (Recognize "terms"/"mentions")
 2. Disambiguation (based off wikipedia e.g)
