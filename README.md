@@ -1,46 +1,111 @@
 # Notes on Data Science, Machine Learning and Statistics
 
-# ML System Design
-- Clarify/frame/define scope in terms of usage/actors (including input, context). Integration of output with system. current state/bootstrapping.
-- Functional requirements: how will it be used, real-time, latency/QPS, resources/timelines, SLAs etc. Incorporating new users/items often a consideration.
-- Non functional: which components will overload, scalable (ask or assume # of datapoints in each stage), available, latency (100 or 500), observability (monitoring, tracing, logging, MLOps)
-   - perf. and capacity, both during training time (data size/capacity/), inference (SLA)
-   - complexities of ML models (training, inference, sample (how hungry it is))
-   - distribute workload (e.g. N documents to be ranked) to multiple model shards to meet SLA but resources are limited and comm will have its own latency
-   - funnel approach (increasing model complexity down the road helps achieve SLA). also helps in error analysis.
-   - 
-- ML objective aligned. Offline vs Online (component-wise e.g. ndcg and end-to-end/downstream system metrics e.g. user's engagement metrics. Crucial to identify/track negative actions/metrics. Consider normalization of metric by e.g. daily active users.
-- Downstream business metrics (DAU, session time, etc.)
+# ML System Design Framework
+
+- Clarify/frame/define scope in terms of usage, integration, current state/boostrapping
+  
+- Actors (entities, input, context)
+  
+- Requirements:
+   - Functional requirements:
+      - how will it be used, real-time, latency/QPS, resources/timelines, SLAs etc. Incorporating new users/items often a consideration.
+   - Non functional:
+      - which components will overload, scalable (ask or assume # of datapoints in each stage), available, latency, observability (monitoring, tracing, logging, MLOps)
+      - perf. and capacity, both during training time (data size/capacity/), inference (SLA)
+      - complexities of ML models (training, inference, sample (how hungry it is))
+      - distribute workload (e.g. N documents to be ranked) to multiple model shards to meet SLA but resources are limited and comm will have its own latency
+
+- Metrics: ML objective aligned with business
+   - Offline, component-wise e.g. ndcg
+   - Online  and end-to-end/downstream system metrics e.g. user's engagement metrics.
+   - identify/track negative actions/metrics.
+   - Downstream business metrics (DAU, session time, etc.)
+   - Consider normalization of metric by e.g. daily active users. 
+
 - Modelling approaches
    - Objectives can be broken into multiple models. Better to have sperate models and then weight instead of predicting the aggregate to keep control.
-   - Break down complex problems (e.g. multi-stage recommender) (funnel approach) and identify inputs/outputs of each stage. or can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
-   - introduce non-linearities in linear models using hand-engineering feature interactions 
-- Feature engineering, aggregated, delayed, raw, online features, precomputed embeddings, normalize (timestamp into UTC), PII (can group critical info) etc.
-   - crowdsourcing, existing system, SMEs, or build a product in a way that collects training data
-- Label generation: heuristics, negative sampling (specific definition of a negative interaction), etc.
-   - often "middle" examples that we are uncertain about or have weak signals can be ignored.
-- training dataset:
-   - decide timespan based on problem making assumptions to make sure enoguh data/patterns is captured
-- embedding generation: upstream model, part of the neural network (dynamically generated (activations) or using weights (static)), trained separately with positive/negative pair; doc2vec and word2vec approach (embedding by averaging and then cosine), PCA over one-hot, node2vec for graphs
-- Balance dataset
-- deployment strategies, ci/cd
-- issues (cold start, etc.)
-- caching: cache features instead of predictions if entities are too many. embeddings often cached in key-value store.
-- REST: stateless, supports caching
-- Inference: aggregator service/load balancer. can also route to different model based on query e.g. ml model for ios vs android. multiple application servers behind load balancer, in case of multi-phase models, manage flow.
-- Scale app server and model services separately
-- each model service as a pod on k8s for autoscaling. kube-proxy enables inter-service communication
-- retrain multiple times per day depending on...
-- common latency target: 200ms (total). # of components might mean 50 ms per service
-- Time-based split avoids data leakage and unbiased estimate. More like backtesting. Simulate a production system. Can give an idea of how frequentyl to re-train
-- Regression (linear/logistic) can obviously be implemented by an MLP
-- Archive older data in cold storage
-- CTR metric is an online/business metric. Often 1% so expect negative samples.
-- practically, training data duration can be picked using experimentation.
-- thiink about a parent service which might call the ML service. e.g. a general search service calling ranking service.
-- inverted index or collab filtering-like 1st phase for quick fast retrieval
-- log model output and get inferred (implicit or explicit) froma nother DB. Feed back to training data for subseuquent runs.
+   - Break down complex problems (e.g. multi-stage recommender), identify inputs/outputs of each stage
+      - can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
+      - funnel approach: increasing model complexity down the road
+         - helps achieve SLA
+         - helps in error analysis.
+         - index (inverted)/bool/collab filtering for fast-retrieval
+  - common issues (cold start, etc.)
 
+- Dataset Generation
+   - sources: crowdsourcing, existing systems, SMEs, or build a product in a way that collects training data
+   - time span: decide based on problem making assumptions to make sure enoguh data/patterns is captured
+      - can be picked using experimentation.
+   - schema: triplet generation (user, pos, neg) e.g recommendation engine.
+   - Balance / Negative Sampling
+      - CTR metric is an online/business metric. Often 1% so expect negative samples.
+     
+- Label generation:
+   - heuristics, labelling, negative sampling (specific definition of a negative interaction), etc.
+   - often "middle" examples that we are uncertain about or have weak signals can be ignored.
+     
+- Feature engineering
+   - Types:
+      - aggregated
+      - delayed
+      - raw (real-time/on-demand)
+      - online features (precomputed)
+      - precomputed embeddings
+      - histograms
+      - different time windows (short-term/long term)
+      - normalization: by metric for fair comparison, (timestamp into UTC), PII (can group critical info) etc.
+   - embedding generation:
+      - upstream model, neural network (dynamically generated (activations) or using weights (static))
+         -  part of main network or trained separately with positive/negative pair
+         -  word2vec -> doc2vec approach: embedding by averaging and then cosine
+      - PCA over one-hot
+      - node2vec for graphs
+
+- Feature Store
+   - Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
+   - Some features (especially on-demand) may only come from raw data (might not make sense to make them a part of feature table e.g. trip_distance, weather).
+   - On-demand features can be logged in UC.
+   - Create training data using primary keys and timestamp to ensure point-in-time correctness
+   - Can publish to an online store like Azure Cosmos DB (or dbx managed) for real-time inference
+     
+
+- Splitting logic:
+   - Often predicting future so time-based split avoids data leakage and unbiased estimate. backtesting.
+      - Simulate a production system. Can give an idea of how frequentyl to re-train
+
+- Inference:
+   - aggregator service/load balancer.
+   - can route to different model based on query e.g. ml model for ios vs android.
+   - multiple application servers behind load balancer, in case of multi-phase models, manage flow.
+  
+- deployment strategies
+   - green/blue, canary, A/B test, shadow test 
+
+- Retraining logic/frequency (online, batch, trigger-based)
+   - log model output and get inferred (implicit or explicit) label. Feed back to training data for subseuquent runs.
+   - online joiner for streaming features
+   - ensure feedback loop
+
+- ci/cd
+
+- Software Engineering / Large-Scale ML Systems
+   - caching: cache features instead of predictions if entities are too many. embeddings often cached in key-value store.
+   - REST: stateless, supports caching
+   - Scale app server and model services separately
+   - each model service as a pod on k8s for autoscaling. kube-proxy enables inter-service communication
+
+   - latency target: 200ms (total). # of components might mean 50 ms per service
+   - Databases
+      - indexing
+      - sharding: geo-based sharding (also reduces latency), range-based, hash-based. so one server is not overloaded. cross-shard queries expensive.
+      - read replicas handle read requests while main handles writes, helps in consistency through replication
+      - terminology: "server" is sharded. "data" is partitioned. (commonly but people use interchangably)
+      - parittioning is about logical structures. could be located on same shard or spread across.
+   - Archive older data in cold storage
+   - thiink about a parent service which might call the ML service. e.g. a general search service calling ranking service.
+
+
+     
 # Ads prediction
 - search engine,  sponsored products (query part of contexts), social media
 - offline:
@@ -211,13 +276,7 @@
 - Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
 - Bootstrapping by ranking by chronological is fine by trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
 
-# Dataset Generation
-- Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
-- Some features (especially on-demand) may only come from raw data (might not make sense to make them a part of feature table e.g. trip_distance). T
-- On-demand features can be logged in UC.
-- Create training data using primary keys and timestamp to ensure point-in-time correctness
-- Can publish to an online store like Azure Cosmos DB for real-time inference
-- Generate triplets (user, pos, neg) for recommendation engine.
+
 
 # Transfer Learning
 - NNs learn latent features hierarchically. Can retrain weights of a model pre-trained on one domain for another. OR can use featurization to extract features for a new model.
@@ -293,7 +352,10 @@
     - Contextual: ELMo (bi-RNN), BERT (bi-Trans)
     - task-based embedding specialized but requires more samples/compute
     - take inspiration from word2vec -> doc2vec. items belonging to a user can be averaged to get user embeddingf
-    
+
+12. Modelling:
+    - Regression (linear/logistic) can be implemented by an MLP
+
 12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
 13. Split:
     - For time-series data, split by time to prevent leakage.
@@ -303,15 +365,16 @@
     - explicitly ensure classes have same distribution in test set as train
     - remember to retrain on all data before deployment/experimentation
 16. Features (or sometimes gorups of features) having high correlation can indicate data leakage. Perform ablation studies.
-17. Test performane should only be used for reporting, not for decision making.
-18. feature stores != feature definion management
-19. feature generalization to unseen data. e.g. commment_id may be bad but user_id might be impportant.
-20. Shouldn't just remove a feature based on coverage. Should look at relationship with output.
-21. Feature scaling impacts gradient boosted trees
-22. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
-23. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
-24. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
-25. Loss Functions:
+17. introduce non-linearities in linear models using hand-engineering feature interactions 
+18. Test performane should only be used for reporting, not for decision making.
+19. feature stores != feature definion management
+20. feature generalization to unseen data. e.g. commment_id may be bad but user_id might be impportant.
+21. Shouldn't just remove a feature based on coverage. Should look at relationship with output.
+22. Feature scaling impacts gradient boosted trees
+23. With smaller dataset, keep track of learning curve to see if it hints that more data will improve accuracy of itself or of a competing algorithm.
+24. Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
+25. Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
+26. Loss Functions:
    - normalized log loss (baseline avg. prediction) for rare events (makes less sensitive to background CTR)
    - quantile loss instead of predicting average (expected value) for over/under-estimating
 25. ML models can fail silently.
@@ -455,11 +518,6 @@
 54. PoC: OK for not focusing on reproducability
 55. Data pipelines: provenance (where it comes from) and lineage (sequence of steps), metadata
 
- # Resources
-
-## Statistics
-
-1. https://towardsdatascience.com/50-statistics-interview-questions-and-answers-for-data-scientists-for-2021-24f886221271
 
 
 # Statistics:
@@ -482,7 +540,6 @@
 - Think if self-join is needed.
 
 # Probability
-
 - Arithmetic series (end - start) / step_size -> n_steps
 - Law of total probability: P(A) = P(A | S1) P(S1) + P(A | S2) P(S2) + ... (all partitions) pretty much what's used for marginal in bayes theorem
   - depending on the situation, one of the Si's could be A itself 
