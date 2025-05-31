@@ -53,7 +53,38 @@
 - action rate (configured by advertiser: click rate, downstream action rate etc)
 - counter metrics (hide ad, never see, report)
 - actors: user, publisher, item, context (query)
-- 
+- features:
+   - context (region, previous queries), user-ad (embedding sim), user-advertiser (embedding sim), advertiser (hist. egnagement), ad raw terms, ad impression (can cut off for ad engagement), ad negative feedback, ad categ/embedding, region histogram, embedding last k days (just avg them)
+   - ad_id??? advertiser_url (can be used for memorization???)
+   - engagement data can be passed either by histogram bins + current day features OR, a single feature with "today's" engagement rate. first approiach better for NN.
+- modelling:
+   - selection (context, query/interest)
+      - funnel: arbitrarily choose size of output
+      - phase 1: index-based filtering. selection criteria by published, user personas
+      - phase 2: bid * predicted score. but can use (bid * prior_score) at this point. Score: cost per engagement based on ad, advertiser,
+      - phase 3: simple ML model
+         - model can be made simply by skipping sparse features in funnel based approach
+         - bid * predicted CPE (more accurate the prior approach in phase 2)
+   - Scalability:
+      -  not sure why selection model was done separately for each shard.
+   -  Auction uses engagement probability so need well-calibrating 
+        -  recalibration: q = p / (p + [1-p] / w) where w  is negative downstampling rate
+        -  factors: bid, engagement score, quality score, budget
+        -  CPE = ad rank of ad below / ad rank score + 0.01
+  -  pacing:
+     - distribute ad over several days
+   - ad prediction
+      - ads are short-lived, dynamic environment, need rapid updates
+      - batch update frequently or a better approach is online learning
+         - logistic regression good for online learning
+            - online joiner that gets near-real-time features and actions and feeds to
+            - training data generator
+            - SGD to perform mini-batch update
+            - one approach is to use logistic regression but to capture non-linearities/sparse, use leaf nodes/activations from tree/NNs as features
+               - prevent catastrophic forgetting
+               - NN/tree-based remain fixed, only use for feature computation
+               - interpretability/calibration remains intact   
+- firing of leaf nodes of tree-based models as features for a downstream model
 
 # Entity Linking
 1. NER (Recognize "terms"/"mentions")
