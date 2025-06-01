@@ -401,7 +401,7 @@ This repository is a curated collection of real-world insights on machine learni
 # ML Use-cases
 
 ## Ads prediction
-- search engine,  sponsored products (query part of contexts), social media
+- downstream systesm: search engine,  sponsored products (query part of contexts), social media
 - offline:
    - AUC is calibration insensitive. multiply probs by 2, AUC won't change so need log loss.
    - need calibrated scores in ads.
@@ -413,8 +413,8 @@ This repository is a curated collection of real-world insights on machine learni
 - counter metrics (hide ad, never see, report)
 - actors: user, publisher, item, context (query)
 - features:
-   - context (region, previous queries), user-ad (embedding sim), user-advertiser (embedding sim), advertiser (hist. egnagement), ad raw terms, ad impression (can cut off for ad engagement), ad negative feedback, ad categ/embedding, region histogram, embedding last k days (just avg them)
-   - ad_id??? advertiser_url (can be used for memorization???)
+   - context (region, previous queries), user-ad (embedding sim), user-advertiser (embedding sim), advertiser (hist. egnagement), ad raw terms, ad impression (can cut off for ad engagement), ad negative feedback, ad categ/embedding, region histogram, embedding last k days of ads (just avg them)
+   - **ad_id??? advertiser_url (can be used for memorization???)**
    - engagement data can be passed either by histogram bins + current day features OR, a single feature with "today's" engagement rate. first approiach better for NN.
 - modelling:
    - selection (context, query/interest)
@@ -446,9 +446,6 @@ This repository is a curated collection of real-world insights on machine learni
 - firing of leaf nodes of tree-based models as features for a downstream model
 
 ## Entity Linking
-1. NER (Recognize "terms"/"mentions")
-2. Disambiguation (based off wikipedia e.g)
-3. linker (to "entitiy" in knowledgebase)
 4. Offline: precision/recall/f1. disamb: precision/accuracy = total correct / total entities detected. overall f1-score metric (define FP,FN,TP,TN) for whole system. Macro-avg might be useful if care about class-based or class/entity is imbalanced
 5. Online metric: guage perf. of downstream system. 
 6. BIO tagging scheema (beginning, inner, non-netity)
@@ -457,9 +454,9 @@ This repository is a curated collection of real-world insights on machine learni
    - VAs
    - the % sesssion/questions success rate
 8. Arch:
-   - NER
-   - Candidate generation (form knowledgebase)
-   - disambiguate (link)
+   - NER (Recognize "terms"/"mentions")
+   - Candidate generation (form knowledgebase) (based off wikipedia e.g)
+   - disambiguate (link to "entitiy" in knowledgebase)
 - Training DATA
    - OS
    - Hand-label
@@ -471,7 +468,7 @@ This repository is a curated collection of real-world insights on machine learni
       - can't use simulatenously both direcions.
       - char-level cnn method has advantage of learning "learn" and "learning" similarity and OOV
    - BERT:
-      - masking problem solution??? understand
+      - masking problem solution
       - case/uncased decide based on problem. distil/base ones are faster for inferenace
    - use token-level embeddings as features to a multi-class classifier. Can also fine-tune embeddings based on NER dataset if data is huge and compute/training time permits.
    - disamb: candidate gen. focus on recall
