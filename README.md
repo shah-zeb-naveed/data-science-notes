@@ -1,11 +1,11 @@
 # Notes on Data Science, Machine Learning and Statistics
 
-Favorite Resources:
+**Favorite Resources:**
+- MLOps by Andrew NG
+- ML System Design Book by Chip Hyuen 
+- Grokking the ML Interview - Educative.io
 - https://developers.google.com/machine-learning/guides/rules-of-ml
 - https://developers.google.com/machine-learning/recommendation
-- MLOps by Andrew NG
-- Grokking the ML Interview - Educative.io
-
 
 
 # ML System Design Framework
@@ -88,7 +88,7 @@ Favorite Resources:
    - multiple application servers behind load balancer, in case of multi-phase models, manage flow.
   
 - deployment strategies
-   - green/blue, canary, A/B test, shadow test 
+   - green/blue, canary, A/B, B/A, shadow test, bandits, interleaving
 
 - Retraining logic/frequency (online, batch, trigger-based)
    - log model output and get inferred (implicit or explicit) label. Feed back to training data for subseuquent runs.
@@ -115,179 +115,9 @@ Favorite Resources:
 
 
      
-# Ads prediction
-- search engine,  sponsored products (query part of contexts), social media
-- offline:
-   - AUC is calibration insensitive. multiply probs by 2, AUC won't change so need log loss.
-   - need calibrated scores in ads.
-- online:
-   - revenue. bid -> display -> if user clicks -> charge business -> make money. 
-   - successful sessions
-   - returning users
-- action rate (configured by advertiser: click rate, downstream action rate etc)
-- counter metrics (hide ad, never see, report)
-- actors: user, publisher, item, context (query)
-- features:
-   - context (region, previous queries), user-ad (embedding sim), user-advertiser (embedding sim), advertiser (hist. egnagement), ad raw terms, ad impression (can cut off for ad engagement), ad negative feedback, ad categ/embedding, region histogram, embedding last k days (just avg them)
-   - ad_id??? advertiser_url (can be used for memorization???)
-   - engagement data can be passed either by histogram bins + current day features OR, a single feature with "today's" engagement rate. first approiach better for NN.
-- modelling:
-   - selection (context, query/interest)
-      - funnel: arbitrarily choose size of output
-      - phase 1: index-based filtering. selection criteria by published, user personas
-      - phase 2: bid * predicted score. but can use (bid * prior_score) at this point. Score: cost per engagement based on ad, advertiser,
-      - phase 3: simple ML model
-         - model can be made simply by skipping sparse features in funnel based approach
-         - bid * predicted CPE (more accurate the prior approach in phase 2)
-   - Scalability:
-      -  not sure why selection model was done separately for each shard.
-   -  Auction uses engagement probability so need well-calibrating 
-        -  recalibration: q = p / (p + [1-p] / w) where w  is negative downstampling rate
-        -  factors: bid, engagement score, quality score, budget
-        -  CPE = ad rank of ad below / ad rank score + 0.01
-  -  pacing:
-     - distribute ad over several days
-   - ad prediction
-      - ads are short-lived, dynamic environment, need rapid updates
-      - batch update frequently or a better approach is online learning
-         - logistic regression good for online learning
-            - online joiner that gets near-real-time features and actions and feeds to
-            - training data generator
-            - SGD to perform mini-batch update
-            - one approach is to use logistic regression but to capture non-linearities/sparse, use leaf nodes/activations from tree/NNs as features
-               - prevent catastrophic forgetting
-               - NN/tree-based remain fixed, only use for feature computation
-               - interpretability/calibration remains intact   
-- firing of leaf nodes of tree-based models as features for a downstream model
 
-# Entity Linking
-1. NER (Recognize "terms"/"mentions")
-2. Disambiguation (based off wikipedia e.g)
-3. linker (to "entitiy" in knowledgebase)
-4. Offline: precision/recall/f1. disamb: precision/accuracy = total correct / total entities detected. overall f1-score metric (define FP,FN,TP,TN) for whole system. Macro-avg might be useful if care about class-based or class/entity is imbalanced
-5. Online metric: guage perf. of downstream system. 
-6. BIO tagging scheema (beginning, inner, non-netity)
-7. Downstream systems:
-   - search engines
-   - VAs
-   - the % sesssion/questions success rate
-8. Arch:
-   - NER
-   - Candidate generation (form knowledgebase)
-   - disambiguate (link)
-- Training DATA
-   - OS
-   - Hand-label
-- Modelling:
-   - context needs to be accounted. bi-directional.
-   - ELMo.
-      - either take char-level CNN or init with word2vec static embeddings for words. then train forward and backward layers independetly.
-      - resulting word embeddings averaged.
-      - can't use simulatenously both direcions.
-      - char-level cnn method has advantage of learning "learn" and "learning" similarity and OOV
-   - BERT:
-      - masking problem solution??? understand
-      - case/uncased decide based on problem. distil/base ones are faster for inferenace
-   - use token-level embeddings as features to a multi-class classifier. Can also fine-tune embeddings based on NER dataset if data is huge and compute/training time permits.
-   - disamb: candidate gen. focus on recall
-      - indexing:
-         - nicknames/alias/subwords/abbrev.
-         - anchor text in HTML
-         - embedding: for an exisitng index, embed all words in the index. then use/build a model that brings abbrev/alias/syns belonging to same entity together. then use knn to expand index.
-   - linking: probability score for each candidate and select highest. focus on precision
-      - inputs:
-         - embedding for target word
-         - then avg of all tokens (can also have separate for entities only) in sentence
-         - type of entity (and other detectedn entities' histogram)
-         - sentence mebdding of the candidate entity (from knowledgebase)
-         - entitiy priors:
-         - P (candiadate | term, type, sent)
-   - example: [perplexity simulated example](https://www.perplexity.ai/search/help-me-understand-this-the-pr-yR65K3NDSPy3fyeqtHG_NQ)
-   - 
+# Notes
 
-
-# Feed Design
-- weighted metric for type of engagements. better to predict indivudal eventually to be able to fine-tune the knob
-- selection:
-   - new tweets, unseen tweets, seen tweets with increased engagement, limit recency, tweets by network, suggested and friends' interactions
-- actors:
-   - user, author, content, context, user-author similarity (percentage to nromalize, avg. tfidf/NN embedding of users, social similarity (overlap ), user-content, 
-- features:
-   - similarity, interaction, influence, relationship, interests, etc.
-- Modelling:
-   - predict prob of engagement
-   - MTL model to predict multiple types of engagement
-   - can get overall model's score and feed as feature to individual models
-   - can stack models in parallel and use a simpler model on the outputs
-   - funnel approach
-- diversity, repetitiveness (content/user) penality - heuristics based like subtract 0.01
-- experimentation: check gain in user engagement metric and p-value
-- 
-
-# Seach Engine
-- Define CTR with high dwell time to remove unsuccessful clicks
-- time/queries to success indicates success (lower per session).
-- can assign negative relevance score to a document to mark irrelevant document
-- query rewriting (spell, expansion vs relaxation to simplify), understnading (intent e.g. local, info, navigational vs informational,), blender
-- 1st stage selctor focused on recall. can do weighted scoring of personalization, doc popularity, intent match, terms match. Google's pagerank has lower weightage and mostly dominated by ML. can assign weights manually or learn by experimentation or learn through ML.
-- ranker itself good be composed of two increasingly complex models/stages.
-- actors: searcher (personas), query (intent, historical engagement), context (time/recency, previous queries), doc (pagerank/backlinks, local/global engagement radius   ), query-searcher, query-doc (text match with content/title/metadata, uni/bigram, tfidf (normalized), engagement etc.), searcher-doc (previously accessed, distance for local intent)
-- training data generation: estimate how much training data can be gathered.
-   - pointwise approach: single doc's relevancy (true ranking at a time). or can "approximate" as relevance/irr using binary classification.  
-      - random negative example (result on 50th page)
-   - pairwise: rank a pair of documents correctly
-      - human labellers or use historic engagement and infer labels using heuristic.
-- LTR (leanring to rank: using supervised ML). stage 1: pointwise, simple logistic/tree-based. stage 2: pairwise. lambdaMart or LambdaRank. focus is on assigning rank scores such that correct order is determined.
-  
-# Recommendation System Design
-- Capacity estimates: users/views
-- New items constantly added
-- recommendation(user_id) -> core function
-- database: items, users, caching
-- batch computation, precompute daily. BUT, wastes resources, daily too less
-- realtime: can store KNN/embeddings in index for fast retrieveal and then scoring
-- can use max-heap to efficientyl update the cached KNN list
-- User interactions fed to kafka, which can be input to a scoring model
-- precache user's last seen entities
-- use same server for data locality benefits
-- geospatial-index-like structure to store embeddings
-- 
-
-# Recommendation Engine
-- model as classification problem. regression if predicitn grating.
-   - can re--weight training samples to support business objective to increase session watch time
-   - can use all methods and generate candidates. we can also use their raw scores (although not comparable) as features to our 1st stage ranker
-- metrics:
-   - mAP., relevant/or not, mean of all users, take average precision at k (where relevant).
-   - mAR. same calculation for recall
-   - f1 based off mAP and mAR
-- normalize matrix by subtracting (user/item) bias using global/user/item avgs.
-- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. can dot b/w items or build average embedding of user and then find closest items. Cons: hand-engineer features.
-- collab filtering: similar users have simular interests. no domain/hand-engineered features necessary.
-- memory-based, extension of KNN, user-user or item-item).
-   - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations. user prefernces change rapidly so harder to scale. item-based can be computed offline and served without frequent re-training. sparse matrices, cold start an issue.
-- model-based (SVD, large matrix split into 2 small then multiplied to get recommendations. Also, NN-based).
-   - In SVD, can be done using SGD or WALS (alternately, solve U and V and match to A for error). Hard to include side features (but can extend interaction matrix to add one-hot encoded blocks) and new users/items (a WALS method exists to solve for new item embedding, or use heuristic e.g. avg embedding in a cateogry).
-   - Matrix factorization tends to recommend popular items.
-- Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training. cold start for new items I think?? what if freeze other embeddings and update new movies?
-- Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair. cold start: lack of sufficient examples to learn embeddings.
-- hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
-- Implicit (infered like watched) or explicit feedback (rating). Explicit feedback can be biased.
-- Common arch: Candidate generation (or multiple generators)
-   - focus on recall. trending, user interests, genre etc.
-- ranker:
-   - focus on precision, ranking
-- actors: 
-   - user (queries, embedding), movies (genre, recency, actors, soundtracks, length), user-movies/genre (historical engagement, similarity), context (time, device, geography), trends, diff. time intervals for metrics, user-actor histogram (normalized)
-   - embeddings of past interaction items can be averaged and fed as a feature into a NN model for ranker. both search terms and watched movies.
-- . once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
-- Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
-- Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
-- Bootstrapping by ranking by chronological is fine by trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
-
-
-
-# Designing Machine Learning Systems (by Chip Huyen)
 1. Requirements of ML systems: availability, reliability, scalability, maintainability, adaptability
 2. Types of ML problems:
    - multilabel classicication: 1 model for all classes with binary vector as output [1, 0, 1] or 1 model for each class where output vector only has one 1 [1], [0]
@@ -428,14 +258,14 @@ Favorite Resources:
   - Hand-designed fusion can be manual, depends on hardware and expertise. ML-based helps estimate cost by generating ground truth for cost estimation model and then predicting time for each sub-graph and then an algo determine the most optimal path to take.
   - In browsers, can use js but it's limited and very slow. WASM is an open-source standard which we can use to compile models. WASM is faster than js but still slow.
 46. Failures:
-  - Software system (deployment, downtime, hardware, dependency).
+  - Software system (deployment, downtime, hardware, dependency) OR
   - ML-specific (train-serving skew, data/trends change over time)
     - Data Distribution Shifts
       - Covariate, P(X) changes but P(Y|X).
         - During development, because of selection bias, up/down-sampling, algo **(like active learning???).**
         - In prod, environment changes.
       - Label (prior) shift
-        - P(Y) changes but P(X|Y). Sometimes covariate can result in label shfit.
+        - P(Y) changes but P(X|Y). _Sometimes_ covariate can result in label shfit.
       - Concept Shift (posterior), P(Y|X) changes but P(X)
         - Same input, diff output. Usualyl cyclic/seasonal. Can use diff models to deal with seasonal drifts.
       - Feature change (schema or range of values)
@@ -458,7 +288,22 @@ Favorite Resources:
   -  if position matters (like pos. of song on spotify), it can affect feedback.
     **-  can train the model with position encoded and then mark as 1 during inference.
     -  another approach is to train 2 models, 1 model predicts probability that an item will be seen and considered given position, other predicts if an item will be clicked given they considered.???**
-     
+
+51. Error Analysis:
+    - ML models can fail silently.
+    - Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
+    - Good practices to avoid problems
+      - Start with simplest architecture (like one-layered RNN before expanding), sanity checks, overfit to small training set and evaluate on same (to make sure minimal loss achieved), set random seeds.
+    - Models with high bias may not improve from more training data but a high variance model might.
+    - Use strategic approach to decide what to tackle first to get highest ROI. e.g. focus on strata giving most error, can further see what specific characterists
+    - collecting more data is expensive so do error analysis to confirm if needed/prioritized.
+    - estimate bias and variance helps determine next steps
+    - analyze errors between training/dev/test sets to determine if there's a variance problem, data mismatch or avoidable bias by comparing to human-level performance. irreducible = bayes error.
+    - chain of assumptions in ML: tuning params for lower training error, regularization/bigger train set for lower dev error, bigger dev set for lower test eror, change dev set or cost function for lower real world errors
+    - early stopping: one knob affects training and dev so Andrew Ng doesn't like it
+    - test set accuracy is not enough. set of disproportionately important examples needs to perform really well.
+    - HLP (human level performance) can't beat that. caution if ground truth for HLP is itself by human.
+      
 45. Observability: is part of monitoring.
   - 3 pillars of monitoring: logs, metrics, traces.
   - Monitoring is about tracking outputs. Monitoring makes no gurantee it will help you find out what went wrong. Monitoring assumes its possible to run tests and let data pass through system to narrow down the problem. Observability makes a stronger assumption that internal states can be inferred using outputs. Allows more fine-grained metrics. Observability and Interpretability go hand-in-hand.
@@ -498,19 +343,21 @@ Favorite Resources:
 47. Deployment:
  - if updated model on new data distribution, test on recent data "backtesting" in "addition" to static test set. recent data could be corrupted.
  - shadow deployment: expensive coz doubles inference cost
- - a/b testing: if model 1 (A and B) is upstream dor model 2, then keep switching A and B (like on alternating days). ensure randomness in traffic routing. calculate sample size based on power analysis (MDE, alpha rate, power or 1-beta, expected variance). Historic growth will define how long to run the experiment for. Error rate (0.05) means we might just pick a wrong model by chance. also possible in batch predictions. it is stateless (does not consider model's current performance).
- - back testing: b/a test to validate a/b results if it's too optimistic
- - long-running a/b test: to measure user retention. can also be done via backtest???
+ - a/b testing: ensure randomness in traffic routing. calculate sample size based on power analysis (MDE, alpha rate, power or 1-beta, expected variance). Historic growth will define how long to run the experiment for. Error rate (0.05) means we might just pick a wrong model by chance.
+   - if model 1 (A and B) is upstream for model 2, then keep switching A and B (like on alternating days). 
+   - **also possible in batch predictions. it is stateless (does not consider model's current performance).???**
+ - back testing: b/a test to validate a/b results if it's too optimistic (sanity check)
+ - long-running a/b test: to measure user retention. **can also be done via backtest???**
  - Canary release (safe-rollout): simialr to A/B testing but doesn't have to be random. e.g. releasing to less critical/low risk markets first.
- - Interleaving, instead of spliting user groups, serve both models to each user and measure user preferences. May not be tied to actual core performance metrics (not sure what was meant by this statement). Need to make sure there is no position bias, by encoding position or by picking A or B with equal probability. Just like drafting process in sports.
+ - Interleaving, instead of spliting user groups, serve both models to each user and measure user preferences. May not be tied to actual core performance metrics (not sure what was meant by this statement). Need to make sure there is no position bias, by encoding position or by picking A or B with equal probability. 
  - bandits: each model a slot machine. requests served to the model with best current performance while also exploring along the way. maximizing predicition accuracy for users. requires online, preferable short/explicit feedback, a mechanism to keep track of each model's current performance and routing requests. similar to exploration-exploitation strategy in reinforcement leanring. e.g. e-greedy. Other exploration algos include Thompson Sampling, Upper Confidence Bound.
    - require less data but are complex
-   - Contextual bandits as an exploration strategy - contextual bandits determine payout of each action like item. can have partial feedback problem (badnit feedback).
-   - less adopted in industry except top-tech.
+   **- Contextual bandits as an exploration strategy - contextual bandits determine payout of each action like item. can have partial feedback problem (badnit feedback). less adopted in industry except top-tech.???**
      
 48. Infra/Tooling
   - storage/compute. we cannot stop 1 container in 2-container pod. in addition to RAM, bandwidth/IO is also important. ops are measured in FLOPS (floating point ops per second). If 1 million FLOPS hardware but app/job runs 0.3, then utilization is 30%. but since it's definition is ambiguous, it's not very useful. Often vCPU used (approx. half of physical core). for companies that grow by a lot, cloud costs can be as high as 50% of their revenue which makes them go back to private data centers (cloud repatriation). Companies use hybrid approach. Multi cloud is also popular to avoid "vendor lock-in". Standardizing dev env is critical and cloud-based envs help.
-  - resource management. pre-cloud era demanded resource utilization. with cloud/elastic, can just scale up esp. if engineers prodictivity is more important. A Scheduler helps cron by bringing in dependeny management. An Orchestrator is concerned with "where" to get thos eresources. "Schedulers deal with job-type abstractions such as DAGs, priority queues, user-level quotas (i.e., the maximum number of instances a user can use at a given time), etc. Orchestrators deal with lower-level abstractions like machines, instances, clusters, service-level grouping, replication, etc....... ". Schedulers for periodical jobs and orchestrators for services where long-running server responds to requests. Used interchangebly since features oberlap and orchestrators like Airflow have their own schedulers.
+  - resource management. pre-cloud era demanded resource utilization. with cloud/elastic, can just scale up esp. if engineers prodictivity is more important.
+  - A Scheduler helps cron by bringing in dependeny management. An Orchestrator is concerned with "where" to get thos eresources. "Schedulers deal with job-type abstractions such as DAGs, priority queues, user-level quotas (i.e., the maximum number of instances a user can use at a given time), etc. Orchestrators deal with lower-level abstractions like machines, instances, clusters, service-level grouping, replication, etc....... ". Schedulers for periodical jobs and orchestrators for services where long-running server responds to requests. Used interchangebly since features oberlap and orchestrators like Airflow have their own schedulers.
     - workflow management tools have schedulers that define tasks and then work with underlying orchestrator to execture jobs. orchestrators often have an instance pool. 
       - airflow was pioneer (config-as-code)and had drawbacks (difficulty setting up diff containers for diff tasks, not parametric, static)
       - perfect (dynamic, parametrized, config-as-code)
@@ -518,7 +365,7 @@ Favorite Resources:
       - Kubeflow and Metaflow - most popular and adnvaced. config as code. kubeflow needs dockerfile and YAML file. Metaflow uses decorators for further abstraction.
   - ml platform: (sagemaker/mlflow) definition varies but set of shared tools for ml adoption and dpeloyment. choice of tool depends on integration with current cloud you're using or wehterh it supports self-hosting/managed service.
 - deployment:
-- model store: definition (shape, architecture), params (sometimes unified with definition file), featurize/predict funcs, dependencies, data (uri, DVC helps version data), model generation code, experiment artifacts, tags (even including git commit).
+- model store: definition (shape, architecture), params (sometimes unified with definition file), featurize/predict funcs, dependencies, data (uri, Data Version Control helps version data), model generation code, experiment artifacts, tags (even including git commit).
 - Feature store: management (shareability, definition), computation, storage (acts like a data warehouse), consistency (some platforms help ensure logic is same between training and inference pipelines).
   - dev enviornment (git, ci/cd, ide)
     
@@ -526,6 +373,7 @@ Favorite Resources:
   -**Consistency-accuracy trade-off???**
   - Human-in-the-loop
   - Smooth failing: use backup/heuristic if new model takes a lot of time
+    
 50. Responsible AI:
   - Framework
     - Discover sources for bias
@@ -538,29 +386,189 @@ Favorite Resources:
       - **Differential privacy: protects individual while sharing group stats???**
     - **Compactness vs fairness trade-off: compression might impact unfairly???**
   - use package slike AI 360 and fairlearn to detect and mitigate bias
-51. Error Analysis:
-    - ML models can fail silently.
-    - Failures can be: theoretical constraincts (e.g. violation of assumptions), poor implementation, bad hyperparaemters, bad data, bad feature engineering,
-    - Good practices to avoid problems
-      - Start with simplest architecture (like one-layered RNN before expanding), sanity checks, overfit to small training set and evaluate on same (to make sure minimal loss achieved), set random seeds.
-    - Models with high bias may not improve from more training data but a high variance model might.
-    - Use strategic approach to decide what to tackle first to get highest ROI. e.g. focus on strata giving most error, can further see what specific characterists
-    - collecting more data is expensive so do error analysis to confirm if needed/prioritized.
-    - estimate bias and variance helps determine next steps
-    - analyze errors between training/dev/test sets to determine if there's a variance problem, data mismatch or avoidable bias by comparing to human-level performance. irreducible = bayes error.
-    - chain of assumptions in ML: tuning params for lower training error, regularization/bigger train set for lower dev error, bigger dev set for lower test eror, change dev set or cost function for lower real world errors
-    - early stopping: one knob affects training and dev so Andrew Ng doesn't like it
-    - test set accuracy is not enough. set of disproportionately important examples needs to perform really well.
-    - HLP (human level performance) can't beat that. caution if ground truth for HLP is itself by human.
+
 52. Degrees of automation: human, shadow, human in the loop (ai assistance (ui to hihglight), partial auto), full automation
 53. Data-centric >>> Model-centric
 54. PoC: OK for not focusing on reproducability
 55. Data pipelines: provenance (where it comes from) and lineage (sequence of steps), metadata
 
 
+# ML Use-cases
+
+## Ads prediction
+- search engine,  sponsored products (query part of contexts), social media
+- offline:
+   - AUC is calibration insensitive. multiply probs by 2, AUC won't change so need log loss.
+   - need calibrated scores in ads.
+- online:
+   - revenue. bid -> display -> if user clicks -> charge business -> make money. 
+   - successful sessions
+   - returning users
+- action rate (configured by advertiser: click rate, downstream action rate etc)
+- counter metrics (hide ad, never see, report)
+- actors: user, publisher, item, context (query)
+- features:
+   - context (region, previous queries), user-ad (embedding sim), user-advertiser (embedding sim), advertiser (hist. egnagement), ad raw terms, ad impression (can cut off for ad engagement), ad negative feedback, ad categ/embedding, region histogram, embedding last k days (just avg them)
+   - ad_id??? advertiser_url (can be used for memorization???)
+   - engagement data can be passed either by histogram bins + current day features OR, a single feature with "today's" engagement rate. first approiach better for NN.
+- modelling:
+   - selection (context, query/interest)
+      - funnel: arbitrarily choose size of output
+      - phase 1: index-based filtering. selection criteria by published, user personas
+      - phase 2: bid * predicted score. but can use (bid * prior_score) at this point. Score: cost per engagement based on ad, advertiser,
+      - phase 3: simple ML model
+         - model can be made simply by skipping sparse features in funnel based approach
+         - bid * predicted CPE (more accurate the prior approach in phase 2)
+   - Scalability:
+      -  not sure why selection model was done separately for each shard.
+   -  Auction uses engagement probability so need well-calibrating 
+        -  recalibration: q = p / (p + [1-p] / w) where w  is negative downstampling rate
+        -  factors: bid, engagement score, quality score, budget
+        -  CPE = ad rank of ad below / ad rank score + 0.01
+  -  pacing:
+     - distribute ad over several days
+   - ad prediction
+      - ads are short-lived, dynamic environment, need rapid updates
+      - batch update frequently or a better approach is online learning
+         - logistic regression good for online learning
+            - online joiner that gets near-real-time features and actions and feeds to
+            - training data generator
+            - SGD to perform mini-batch update
+            - one approach is to use logistic regression but to capture non-linearities/sparse, use leaf nodes/activations from tree/NNs as features
+               - prevent catastrophic forgetting
+               - NN/tree-based remain fixed, only use for feature computation
+               - interpretability/calibration remains intact   
+- firing of leaf nodes of tree-based models as features for a downstream model
+
+## Entity Linking
+1. NER (Recognize "terms"/"mentions")
+2. Disambiguation (based off wikipedia e.g)
+3. linker (to "entitiy" in knowledgebase)
+4. Offline: precision/recall/f1. disamb: precision/accuracy = total correct / total entities detected. overall f1-score metric (define FP,FN,TP,TN) for whole system. Macro-avg might be useful if care about class-based or class/entity is imbalanced
+5. Online metric: guage perf. of downstream system. 
+6. BIO tagging scheema (beginning, inner, non-netity)
+7. Downstream systems:
+   - search engines
+   - VAs
+   - the % sesssion/questions success rate
+8. Arch:
+   - NER
+   - Candidate generation (form knowledgebase)
+   - disambiguate (link)
+- Training DATA
+   - OS
+   - Hand-label
+- Modelling:
+   - context needs to be accounted. bi-directional.
+   - ELMo.
+      - either take char-level CNN or init with word2vec static embeddings for words. then train forward and backward layers independetly.
+      - resulting word embeddings averaged.
+      - can't use simulatenously both direcions.
+      - char-level cnn method has advantage of learning "learn" and "learning" similarity and OOV
+   - BERT:
+      - masking problem solution??? understand
+      - case/uncased decide based on problem. distil/base ones are faster for inferenace
+   - use token-level embeddings as features to a multi-class classifier. Can also fine-tune embeddings based on NER dataset if data is huge and compute/training time permits.
+   - disamb: candidate gen. focus on recall
+      - indexing:
+         - nicknames/alias/subwords/abbrev.
+         - anchor text in HTML
+         - embedding: for an exisitng index, embed all words in the index. then use/build a model that brings abbrev/alias/syns belonging to same entity together. then use knn to expand index.
+   - linking: probability score for each candidate and select highest. focus on precision
+      - inputs:
+         - embedding for target word
+         - then avg of all tokens (can also have separate for entities only) in sentence
+         - type of entity (and other detectedn entities' histogram)
+         - sentence mebdding of the candidate entity (from knowledgebase)
+         - entitiy priors:
+         - P (candiadate | term, type, sent)
+   - example: [perplexity simulated example](https://www.perplexity.ai/search/help-me-understand-this-the-pr-yR65K3NDSPy3fyeqtHG_NQ)
+   - 
+
+
+## Feed Design
+- weighted metric for type of engagements. better to predict indivudal eventually to be able to fine-tune the knob
+- selection:
+   - new tweets, unseen tweets, seen tweets with increased engagement, limit recency, tweets by network, suggested and friends' interactions
+- actors:
+   - user, author, content, context, user-author similarity (percentage to nromalize, avg. tfidf/NN embedding of users, social similarity (overlap ), user-content, 
+- features:
+   - similarity, interaction, influence, relationship, interests, etc.
+- Modelling:
+   - predict prob of engagement
+   - MTL model to predict multiple types of engagement
+   - can get overall model's score and feed as feature to individual models
+   - can stack models in parallel and use a simpler model on the outputs
+   - funnel approach
+- diversity, repetitiveness (content/user) penality - heuristics based like subtract 0.01
+- experimentation: check gain in user engagement metric and p-value
+- 
+
+## Seach Engine
+- Define CTR with high dwell time to remove unsuccessful clicks
+- time/queries to success indicates success (lower per session).
+- can assign negative relevance score to a document to mark irrelevant document
+- query rewriting (spell, expansion vs relaxation to simplify), understnading (intent e.g. local, info, navigational vs informational,), blender
+- 1st stage selctor focused on recall. can do weighted scoring of personalization, doc popularity, intent match, terms match. Google's pagerank has lower weightage and mostly dominated by ML. can assign weights manually or learn by experimentation or learn through ML.
+- ranker itself good be composed of two increasingly complex models/stages.
+- actors: searcher (personas), query (intent, historical engagement), context (time/recency, previous queries), doc (pagerank/backlinks, local/global engagement radius   ), query-searcher, query-doc (text match with content/title/metadata, uni/bigram, tfidf (normalized), engagement etc.), searcher-doc (previously accessed, distance for local intent)
+- training data generation: estimate how much training data can be gathered.
+   - pointwise approach: single doc's relevancy (true ranking at a time). or can "approximate" as relevance/irr using binary classification.  
+      - random negative example (result on 50th page)
+   - pairwise: rank a pair of documents correctly
+      - human labellers or use historic engagement and infer labels using heuristic.
+- LTR (leanring to rank: using supervised ML). stage 1: pointwise, simple logistic/tree-based. stage 2: pairwise. lambdaMart or LambdaRank. focus is on assigning rank scores such that correct order is determined.
+  
+## Recommendation System Design
+- Capacity estimates: users/views
+- New items constantly added
+- recommendation(user_id) -> core function
+- database: items, users, caching
+- batch computation, precompute daily. BUT, wastes resources, daily too less
+- realtime: can store KNN/embeddings in index for fast retrieveal and then scoring
+- can use max-heap to efficientyl update the cached KNN list
+- User interactions fed to kafka, which can be input to a scoring model
+- precache user's last seen entities
+- use same server for data locality benefits
+- geospatial-index-like structure to store embeddings
+- 
+
+## Recommendation Engine
+- model as classification problem. regression if predicitn grating.
+   - can re--weight training samples to support business objective to increase session watch time
+   - can use all methods and generate candidates. we can also use their raw scores (although not comparable) as features to our 1st stage ranker
+- metrics:
+   - mAP., relevant/or not, mean of all users, take average precision at k (where relevant).
+   - mAR. same calculation for recall
+   - f1 based off mAP and mAR
+- normalize matrix by subtracting (user/item) bias using global/user/item avgs.
+- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. can dot b/w items or build average embedding of user and then find closest items. Cons: hand-engineer features.
+- collab filtering: similar users have simular interests. no domain/hand-engineered features necessary.
+- memory-based, extension of KNN, user-user or item-item).
+   - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations. user prefernces change rapidly so harder to scale. item-based can be computed offline and served without frequent re-training. sparse matrices, cold start an issue.
+- model-based (SVD, large matrix split into 2 small then multiplied to get recommendations. Also, NN-based).
+   - In SVD, can be done using SGD or WALS (alternately, solve U and V and match to A for error). Hard to include side features (but can extend interaction matrix to add one-hot encoded blocks) and new users/items (a WALS method exists to solve for new item embedding, or use heuristic e.g. avg embedding in a cateogry).
+   - Matrix factorization tends to recommend popular items.
+- Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training. cold start for new items I think?? what if freeze other embeddings and update new movies?
+- Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair. cold start: lack of sufficient examples to learn embeddings.
+- hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
+- Implicit (infered like watched) or explicit feedback (rating). Explicit feedback can be biased.
+- Common arch: Candidate generation (or multiple generators)
+   - focus on recall. trending, user interests, genre etc.
+- ranker:
+   - focus on precision, ranking
+- actors: 
+   - user (queries, embedding), movies (genre, recency, actors, soundtracks, length), user-movies/genre (historical engagement, similarity), context (time, device, geography), trends, diff. time intervals for metrics, user-actor histogram (normalized)
+   - embeddings of past interaction items can be averaged and fed as a feature into a NN model for ranker. both search terms and watched movies.
+- . once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
+- Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
+- Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
+- Bootstrapping by ranking by chronological is fine by trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
+
+
+
 # Statistics:
 
-## Tests:
 - If effect size to be detected is very small, then to each a given power level, a greater sample size is required.
 - In other words, if an effect size = X is observed, then if the sample size was huge, the probabilit of making a Type 2 Error (of not rejecting a false hypothesis) is less as compared to if the effect size X was observed using a small sample.
 - Increasing sample size maintains probability of Type 1 error and decreases probability of Type 2 error. The latter makes sense based on the point discussed above.
@@ -571,11 +579,6 @@ Favorite Resources:
 - Effect sizes like Cohen's D are essentially differences. It's just that they are converted to standardized form using a same standardization (assuming it is same for both groups) or a pooled standard deviation (from both groups). This standardization is actually questionable sometimes. https://rpsychologist.com/cohend/
 - Chi-square independence of test: row percentage multiplied by column total (gives you expected frequency)
 
-
-# SQL
-- CTEs/Subqueries and Window functions is a must.
-- For funnel analysis/timeline of events, can use UNION ALL.
-- Think if self-join is needed.
 
 # Probability
 - Arithmetic series (end - start) / step_size -> n_steps
@@ -599,3 +602,9 @@ Favorite Resources:
 - For games that recursive after multiple rounds, think about markov chains (calculate steps starting that point onwards with offset indiating number of itinial steps, then for all possible branches write equations and solve them together)
 - Sampling from CDF (of a normal dist) is uniform (don't get it exactly but maybe talks about y-axis raange regardless of shape, view vertically)
 - Linearity of expectation: E(X) = E(X1) + E(X2) + ....
+
+
+# SQL
+- CTEs/Subqueries and Window functions is a must.
+- For funnel analysis/timeline of events, can use UNION ALL.
+- Think if self-join is needed.
