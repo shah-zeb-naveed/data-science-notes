@@ -105,6 +105,7 @@
 
    - latency target: 200ms (total). # of components might mean 50 ms per service
    - Databases
+      - leverage kafka / rdbms / blob storage  
       - indexing
       - sharding: geo-based sharding (also reduces latency), range-based, hash-based. so one server is not overloaded. cross-shard queries expensive.
       - read replicas handle read requests while main handles writes, helps in consistency through replication
@@ -519,53 +520,75 @@
       - human labellers or use historic engagement and infer labels using heuristic.
 - LTR (leanring to rank: using supervised ML). stage 1: pointwise, simple logistic/tree-based. stage 2: pairwise. lambdaMart or LambdaRank. focus is on assigning rank scores such that correct order is determined.
   
-## Recommendation System Design
-- Capacity estimates: users/views
-- New items constantly added
-- recommendation(user_id) -> core function
-- database: items, users, caching
-- batch computation, precompute daily. BUT, wastes resources, daily too less
-- realtime: can store KNN/embeddings in index for fast retrieveal and then scoring
-- can use max-heap to efficientyl update the cached KNN list
-- User interactions fed to kafka, which can be input to a scoring model
-- precache user's last seen entities
-- use same server for data locality benefits
-- geospatial-index-like structure to store embeddings
-- 
 
 ## Recommendation Engine
-- model as classification problem. regression if predicitn grating.
-   - can re--weight training samples to support business objective to increase session watch time
+- Capacity estimates: users/views
+- New users/items constantly added
+- recommendation(user_id) -> core function
+- model as classification problem. regression if predicting rating.
+   - can further re-weight training samples to support business objective to increase session watch time
    - can use all methods and generate candidates. we can also use their raw scores (although not comparable) as features to our 1st stage ranker
-- metrics:
-   - mAP., relevant/or not, mean of all users, take average precision at k (where relevant).
+- metrics: 
+   - mAP., relevant/or not (no relevance score in recommendation), mean of all users, take average precision@k (where relevant).
    - mAR. same calculation for recall
    - f1 based off mAP and mAR
-- normalize matrix by subtracting (user/item) bias using global/user/item avgs.
-- content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. can dot b/w items or build average embedding of user and then find closest items. Cons: hand-engineer features.
-- collab filtering: similar users have simular interests. no domain/hand-engineered features necessary.
-- memory-based, extension of KNN, user-user or item-item).
-   - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations. user prefernces change rapidly so harder to scale. item-based can be computed offline and served without frequent re-training. sparse matrices, cold start an issue.
-- model-based (SVD, large matrix split into 2 small then multiplied to get recommendations. Also, NN-based).
-   - In SVD, can be done using SGD or WALS (alternately, solve U and V and match to A for error). Hard to include side features (but can extend interaction matrix to add one-hot encoded blocks) and new users/items (a WALS method exists to solve for new item embedding, or use heuristic e.g. avg embedding in a cateogry).
-   - Matrix factorization tends to recommend popular items.
-- Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed https://developers.google.com/machine-learning/recommendation/dnn/training. cold start for new items I think?? what if freeze other embeddings and update new movies?
-- Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair. cold start: lack of sufficient examples to learn embeddings.
-- hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
-- Implicit (infered like watched) or explicit feedback (rating). Explicit feedback can be biased.
-- Common arch: Candidate generation (or multiple generators)
-   - focus on recall. trending, user interests, genre etc.
-- ranker:
-   - focus on precision, ranking
-- actors: 
-   - user (queries, embedding), movies (genre, recency, actors, soundtracks, length), user-movies/genre (historical engagement, similarity), context (time, device, geography), trends, diff. time intervals for metrics, user-actor histogram (normalized)
+   - RMSE if numeric
+- Preprocess
+  - normalize matrix by subtracting (user/item) bias using global/user/item avgs **(why subtracting for item makes sense???)**.
+- Labels: Implicit (infered like watched) or explicit feedback (rating). Explicit feedback can be biased.
+- Modelling:
+  - content filtering: if you like ironman, since ironman and ironman2 have same features, recommend ironman 2 (no cold start). user preferences can be boostrapped explicit or using historic. Can caputre a user's niche interests but can't discover. can dot b/w items (weight based on user's score) or build average embedding of user and then find closest items. Cons: hand-engineer features.
+  - collab filtering: similar users have simular interests. no domain/hand-engineered features necessary.
+    - memory-based, extension of KNN, user-user or item-item.
+       - user-user/item-item have different axis of similarities, filter items/users and then custom weighted avg logic to get final recommendations. user prefernces change rapidly so harder to scale. item-based and user-based are static and can be computed offline and served without frequent re-training. sparse matrices, cold start an issue.
+    - model-based (SVD, large matrix split into 2 small then multiplied to get missing recommendations.).
+       - In SVD, can be done using SGD or WALS (alternately, solve U and V and match to A for error). Hard to include side features (but can extend interaction matrix to add one-hot encoded blocks) and new users/items (a WALS method exists to solve for new item embedding, or use heuristic e.g. avg embedding in a cateogry).
+       - Matrix factorization tends to recommend popular items.
+  - Softmax DNN, multi-class classification: user query input (dense like watch time, sparse like country), output = softmax over item corpus. Last layer of weights = item embeddings. However, the user embeddings are not learned but system learns for query features. To avoid folding, incorporate negative samples as well (hard negatives, negative pairs with highest error and gradient update). High latency as dynamic user query embeddings need to be computed. cold start for new items.
+    - comparison: https://developers.google.com/machine-learning/recommendation/dnn/training
+  - Two-tower: learn embeddings for both in input, incorporate side features of both and then predict one pair. **cold start: lack of sufficient examples to learn embeddings.** (i don't think cold start applies to two-tower)
+  - hybrid (combine both in a layered approach, weighted approach, to fix cold start, etc.)
+- Common arch:
+  - Candidate generation (or multiple generators)
+     - focus on recall. trending, user interests, genre/cahractersistcs, historical interactions etc.
+  - ranker:
+     - focus on precision
+     - With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time.
+  - reranking (diversity, freshness, , business rules, content explicitly disliked by user, exploration/exploitation)
+- actors/features: 
+   - user (queries, embedding),
+   - movies (genre, recency, actors, soundtracks, length, description text embedding),
+   - user-movies/genre (historical engagement, similarity),
+   - context (time, device, geography),
+   - trends,
+   - diff. time intervals for metrics,
+   - user-actor histogram (normalized)
    - embeddings of past interaction items can be averaged and fed as a feature into a NN model for ranker. both search terms and watched movies.
-- . once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched), scoring (using additional features) , reranking (diversity, freshness, fairness, business rules, content explicitly disliked by user, exploration/exploitation). Can precompute embeddings, do scoring offline and/or use ANN. Why scoring? With a smaller pool of candidates, the system can afford to use more features and a more complex model that may better capture context. Scoring can use click-rate, watch time, etc objsective. To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
-- Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
-- Evaluation: precision@K, instead of train/test split, can mask interactions and then predict, can use RMSE, recall/f1, etc. depending on target variable.
-- Bootstrapping by ranking by chronological is fine by trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
+- once you have embeddings/vectors, it's an ANN problem (e.g. fetch last X entries user has watched)
+- Issues:
+  - To fix positional bias: Create position-independent rankings or Rank all the candidates as if they are in the top position on the screen.
+  - Frequent items have higher norm so dot product metric may dominate. Rare items may not be updated frequently during training so embedding initialization should be carefully done.
+  - Cold start
+- Evaluation:
+  - instead of train/test split, can mask interactions and then predict
+- Bootstrapping: by ranking by chronological is fine but trade-off is serving bias (bottom items ignored). Be creative in terms of boostrapping. Heuristic like most engaged feeds, then permuted for randomness.
+- Data/Infrastructure 
+  - Run inference and data access on the same server to leverage data locality.
+  - Use a FAISS-like in memory index to store ANN index and query embeddings .
+  - Stores items, users, and caching layers.
+  - User interactions are streamed to Kafka, which feeds into a scoring model for real-time updates.
+- Inference Optimization Strategies
+    - Batch Processing
+      - Perform daily batch scoring to precompute recommendations.
+      - Limitation: can waste resources by scoring for inactive users; daily updates may be too infrequent.
+    - Realtime
+      - Precompute user/item embeddings offline.
+      - KNN lists may also be precomputed so only have to do scoring for each user (might waste resources)
+      - Use Approximate Nearest Neighbors (ANN) for fast similarity search.
+      - Use a max-heap to efficiently update a user’s top-K similar items/entities.
+      - Consider pre-caching user’s last seen entities to improve latency.
 
-
+---
 
 # Statistics:
 
