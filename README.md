@@ -1,5 +1,9 @@
 # Notes on Data Science, Machine Learning and Statistics
 
+This repository is a curated collection of real-world insights on machine learning system design, MLOps best practices, scalable inference, and model deployment. Whether you're building a recommendation engine, optimizing real-time prediction latency, or exploring online learning and A/B testing strategies, these notes cover practical ML challenges rarely addressed in textbooks. Ideal for data scientists, ML engineers, and AI practitioners looking to bridge the gap between research and production.
+
+📈 Keywords: machine learning deployment, scalable inference, MLOps notes, ML engineering system design, production ML, FAISS real-time search, Redis caching ML, feature store tips, inference latency optimization.
+
 **Favorite Resources:**
 - MLOps by Andrew NG
 - ML System Design Book by Chip Hyuen 
@@ -114,8 +118,7 @@
    - Archive older data in cold storage
    - thiink about a parent service which might call the ML service. e.g. a general search service calling ranking service.
 
-
-     
+---
 
 # Notes
 
@@ -393,6 +396,7 @@
 54. PoC: OK for not focusing on reproducability
 55. Data pipelines: provenance (where it comes from) and lineage (sequence of steps), metadata
 
+---
 
 # ML Use-cases
 
@@ -488,38 +492,58 @@
 
 
 ## Feed Design
-- weighted metric for type of engagements. better to predict indivudal eventually to be able to fine-tune the knob
-- selection:
-   - new tweets, unseen tweets, seen tweets with increased engagement, limit recency, tweets by network, suggested and friends' interactions
 - actors:
    - user, author, content, context, user-author similarity (percentage to nromalize, avg. tfidf/NN embedding of users, social similarity (overlap ), user-content, 
 - features:
    - similarity, interaction, influence, relationship, interests, etc.
 - Modelling:
-   - predict prob of engagement
-   - MTL model to predict multiple types of engagement
-   - can get overall model's score and feed as feature to individual models
+  - weighted metric for type of engagements (like, comment etc). better to predict indivudal eventually to be able to fine-tune the knob
+  - funnel approach
+  - selection:
+     - new, unseen tweets, seen tweets with increased engagement, limit recency, tweets by network, suggested and friends' interactions
+  - predict prob of engagement
+   - Multi-task learning model to predict multiple types of engagement
+   - alternatively, can get overall model's score and feed as feature to individual models
    - can stack models in parallel and use a simpler model on the outputs
-   - funnel approach
-- diversity, repetitiveness (content/user) penality - heuristics based like subtract 0.01
+  - reranker:
+    - diversity, repetitiveness (content/user) penality - heuristics based like subtract 0.01
 - experimentation: check gain in user engagement metric and p-value
-- 
+  
 
 ## Seach Engine
-- Define CTR with high dwell time to remove unsuccessful clicks
-- time/queries to success indicates success (lower per session).
-- can assign negative relevance score to a document to mark irrelevant document
-- query rewriting (spell, expansion vs relaxation to simplify), understnading (intent e.g. local, info, navigational vs informational,), blender
-- 1st stage selctor focused on recall. can do weighted scoring of personalization, doc popularity, intent match, terms match. Google's pagerank has lower weightage and mostly dominated by ML. can assign weights manually or learn by experimentation or learn through ML.
-- ranker itself good be composed of two increasingly complex models/stages.
-- actors: searcher (personas), query (intent, historical engagement), context (time/recency, previous queries), doc (pagerank/backlinks, local/global engagement radius   ), query-searcher, query-doc (text match with content/title/metadata, uni/bigram, tfidf (normalized), engagement etc.), searcher-doc (previously accessed, distance for local intent)
-- training data generation: estimate how much training data can be gathered.
-   - pointwise approach: single doc's relevancy (true ranking at a time). or can "approximate" as relevance/irr using binary classification.  
-      - random negative example (result on 50th page)
-   - pairwise: rank a pair of documents correctly
-      - human labellers or use historic engagement and infer labels using heuristic.
-- LTR (leanring to rank: using supervised ML). stage 1: pointwise, simple logistic/tree-based. stage 2: pairwise. lambdaMart or LambdaRank. focus is on assigning rank scores such that correct order is determined.
-  
+- Metrics:
+  - nDCG, MAP
+  - time/queries to success indicates success (lower per session).
+- Labels/Data:
+  - can assign negative relevance score to a document to mark irrelevant document
+  - Define CTR with high dwell time to remove unsuccessful clicks
+- actors:
+  - searcher (personas)
+  - query (intent, historical engagement)
+  - context (time/recency, previous queries)
+  - doc (pagerank/backlinks, local/global engagement radius)
+  - **query-searcher???**
+  - query-doc (text match with content/title/metadata, uni/bigram, tfidf (normalized), engagement etc.)
+  - searcher-doc (previously accessed, distance for local intent, interest match)
+- training data generation:
+  - estimate how much training data can be gathered.
+- Architecture:
+  - query rewriting (spell, expansion vs relaxation to simplify)
+  - understnading (intent e.g. local, info, navigational vs informational,)
+  - **blender???**
+  - 1st stage selctor focused on recall. can do weighted scoring of
+    - personalization
+    - doc popularity
+    - intent match
+    - terms match.
+    - Google's pagerank has lower weightage and mostly dominated by ML. can assign weights manually or learn by experimentation or learn through ML.
+  - ranker itself good be composed of two increasingly complex models/stages.
+    - Learning to Rank (LTR) is a supervised machine learning approach to optimize how items are ranked in response to a query. Focus is on assigning scores that yield the correct order, not just correct labels.
+      - Stage 1 – Pointwise models: Treats each item independently and predicts a relevance score (e.g., logistic regression, decision trees). Simple but ignores item comparisons.
+        - pointwise approach: single doc's relevancy (true ranking at a time). or can "approximate" as relevance/irr using binary classification.  
+        - random negative example (result on 50th page)
+      - Stage 2 – Pairwise models: Compares item pairs to learn relative orderings (e.g., LambdaRank, LambdaMART). The model learns to adjust scores so that higher-relevance items are ranked above lower-relevance ones, optimizing ranking metrics (e.g., NDCG).
+        - human labellers or use historic engagement and infer labels using heuristic.
 
 ## Recommendation Engine
 - Capacity estimates: users/views
