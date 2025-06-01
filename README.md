@@ -23,7 +23,7 @@
    - Consider normalization of metric by e.g. daily active users. 
 
 - Modelling approaches
-   - Objectives can be broken into multiple models. Better to have sperate models and then weight instead of predicting the aggregate to keep control.
+   - Objectives can be broken into multiple models.
    - Break down complex problems (e.g. multi-stage recommender), identify inputs/outputs of each stage
       - can create multiple propensity models (like, comment, share) and weighted avaerage using business-defined importances.
       - funnel approach: increasing model complexity down the road
@@ -41,8 +41,9 @@
       - CTR metric is an online/business metric. Often 1% so expect negative samples.
      
 - Label generation:
-   - heuristics, labelling, negative sampling (specific definition of a negative interaction), etc.
+   - heuristics (programming/LFs), hand labelling, negative sampling (specific definition of a negative interaction), etc.
    - often "middle" examples that we are uncertain about or have weak signals can be ignored.
+   - semi-supervision/active learning
      
 - Feature engineering
    - Types:
@@ -52,7 +53,7 @@
       - online features (precomputed)
       - precomputed embeddings
       - histograms
-      - different time windows (short-term/long term)
+      - time decay/windows
       - normalization: by metric for fair comparison, (timestamp into UTC), PII (can group critical info) etc.
    - embedding generation:
       - upstream model, neural network (dynamically generated (activations) or using weights (static))
@@ -278,18 +279,16 @@
 
 
 
-# Transfer Learning
-- NNs learn latent features hierarchically. Can retrain weights of a model pre-trained on one domain for another. OR can use featurization to extract features for a new model.
-
 # Designing Machine Learning Systems (by Chip Huyen)
-1. Requirements of ML systems: reliability, scalability, maintainability, adaptability
+1. Requirements of ML systems: availability, reliability, scalability, maintainability, adaptability
 2. Types of ML problems:
-   - multilabel classicication: 1 model for all classes with binary vector as output or 1 model for each class where output vector only has one 1.
+   - multilabel classicication: 1 model for all classes with binary vector as output [1, 0, 1] or 1 model for each class where output vector only has one 1 [1], [0]
    - Multiple ways to solve a problem: if using User + Environment features for outputting a score for each app where output vector size based on current N apps -> can't scale for new apps but instead, use User + Env + App features (for all available apps) and output a single value.
    - Multiple objectives: one approach is to join different losses in one objective and set their co-efficients but this requires retraining on each choice of co-efficient combo. Instead can train different models for different losses and than create scores based on heuristics.
 3. Data Engineering
    - binary files are compact
    - row vs columnar tables, good for inserts or reading rows (csvs), parquet good for columnar analytics
+      - column oriented for training pipeline keeps costs low and high throughput.
    - NOSQL: document-type have rare relationhips. graph-based suit better for such cases.
    - OLTP: transactional, fast writes so users dont wait
      - ACID: definitons vary.
@@ -302,49 +301,49 @@
    - both OLAP/OLTP become outdated. New is Lakehouse (best of data warehouse and data lake)
    - ELT instead of ETL so transformations done by apps that pull from warehouses and ELT process doesn't care about source schema changes
    - Data passing b/w services (aka request driven). Having different services for different components of the company's ML needs.
-   - data broadcasted to a broker (called events in event-driven even hub)
-   - column oriented for training pipeline keeps costs low and high throughput.
+   - data broadcasted to a broker (called events in event-driven hub)
 4. Sampling
      - Non-probaiblity sampling (convenience, snowball (start small and then increase), juedgement (experts decide what to use), quota sampling (custom defined groups). Signifciant selectio bias.
      - Simple random (minoirty class might be sampled out compltely)
      - Stratified (maintain proportions, may not be opossible in multi-label)
      - Weighted sampling (each data point has assigned probability isntead of uniform. e.g. recent data might be more important)
      - Reservoir sampling (good for streaming data, leetcode question also.
-     - Important samploing (when main distribution not accessible/exensive. use proposal distribution. e.g. using old policy to calcualte rewards in reinforcemnet learning)
+     - Importance samploing (when main distribution not accessible/exensive. use proposal distribution. e.g. using old policy to calcualte rewards in reinforcemnet learning)
      - for balancing, keep test/val set intact
         - balancing can result in uncalibrating probabilities so use with caution
-        - 
 5. Training data:
    - drop useless data (e.g. bot impressions)
-   - remove bias (e.g. popularity) bu exploration/exploitation strategy, choosing the right metrics, etc.  
 5. Features:
    - onehot encoder: high compute/dims for high cardinality
    - time decay and multiple windows to capture short term, long term, recency patterns
+   - transfer learning
+     - NNs learn latent features hierarchically. Can retrain weights of a model pre-trained on one domain for another. OR can use featurization to extract features for a new model.
+
 5. Labels: label multiplicity when diff labels by annotaters. natural labels from data. natural label based on user behavior aka behavioral labels. can start with hand labels, natural labels or and explicit feedback.
   - programmaetic labels (weak supervision, labelling  functions based on heuristics). could be keyword, regular exp, database lookups etc. can use multiple LFs. small hand labels used for guidance/evaluation. can be used in different projects. why ml? because LFs might not cover all samples so can use ML for such samples. Can also use this as a starting point for producitonizing ML while ground truth labels are collected.
   - semi-supervision: various methods. can use ml to predict on unlabelled and then retraining on confident samples. repeat the process. OR, use KNN/clustering approach. OR purturb samples to create artificial samples. leave signifcant eval set and and then continue training the champion on all data.
-- transfer learning
-- acitve learner (a model) sends unlaballed samples to human annotators (less confiedent)
-- 
+  - acitve learner (a model) sends unlaballed samples to human oracles (less confiedent)
+
+
 7.  feedback loop length: sometimes controllable. shorter means faster but might be noisy.
 8. Class Imbalance:
   - model might be stuck in non-optimal solution, won't find signal for rare class and/or the cost of misprediction for rare class might be more important. can use twophase learning (where we use original data for fine-tuninga fter training model with sampled/balanced data).
   - under/over/both sampling or smote
   - some argue we shouldn't fix class imbalance as deep NNs can learn patterns
-  - right evaluation metrics are important: accuracy/f1 might be high but misleading. AUC curve?  Accuracy might still be a good metric for a particular class. F1-related metrics focus on positive class. It is asseymetric as depends on what our "positive" class is.  ROC does not tell anything about negative class (use PR curve instead).
+  - right evaluation metrics are important: accuracy/f1 might be high but misleading. AUC curve?  Accuracy might still be a good metric for a particular class. F1-related metrics focus on positive class. It is asseymetric as depends on what our "positive" class is.  ROC does not tell anything about negative class (use PR curve instead) (PR curve does not get skweed because of high TNs)
   - Algorithmic methods. Modify cost (manually define cost matrix, or use class-balanced loss or focal loss (penalize model where it's more wrong). Ensemlbes can also prove robust.
 10. Transfer learning:
     - extract layers and use as features, train a few layers (if less data and more commonolaties), train more layers or train entire netowrk by warm starting with pre-trained model
 9. Data augmentation
   - just like CV, NLP can benefit from augmentation (like templaing, or replacing words with synonyms, perturbation (which can also help make models robust to noise, adverserial attacks
   - analyze error rate to decide what kinds of inputs need augmentation, e.g. different types of noise in the background
-  - GANs can be used to synthesize data e.g. converint sunny to rainy
+  - GANs can be used to synthesize data e.g. converting sunny to rainy
   - Adding data might hurt if overrepresent noisy/synethetic data and model is simple (high bias)
 8. Handling missing values: MNAR, MAR (linked with another feature making it not-at-random), MCAR   
 9. Feature hashing helps limit the # of features. Impact of collisions is random so better than "unknown" category. Or can group into "Other".
 10. Feature crossing: like lat x long to define city blocks. hashing is more ciritcal now.
 11. can apply clipping before scaling/min-max.
-10. NNs don't work well with unit variance.
+10. NNs don't work well with unit variance????
 11. Embeddings:
     - project item/user in same space.
     - Position embeddings: either can be treated the same way as word or can have fixed pos. embedding (a case of fourier features) where we have a single column with a function like sin/cosine as a function of position p. When positions are continuous (e.g. in 3D coordinates)
@@ -355,6 +354,7 @@
 
 12. Modelling:
     - Regression (linear/logistic) can be implemented by an MLP
+   - remove bias (e.g. popularity) by exploration/exploitation strategy, choosing the right metrics, etc.  
 
 12. Data leakage: sometimes the way data is collected or underlying process implicitly leaks output into features.
 13. Split:
