@@ -73,6 +73,9 @@ This repository is a curated collection of real-world insights on machine learni
          -  word2vec -> doc2vec approach: embedding by averaging and then cosine
       - PCA over one-hot
       - node2vec for graphs
+      - hashing trick
+      - embedding from metadata if column too high cardinal and low samples.
+      - hybrid e.g. hashing + embedding from metadata, etc.
 
 - Feature Store
    - Maintain entity-wise/time_window-wise feature tables e.g user_features_table, product_feautres_table
@@ -217,7 +220,7 @@ This repository is a curated collection of real-world insights on machine learni
   - Basic assumptions (prediction assumption, iid, smoothness (values close together), tractable to compute p(z|x) in gen. models, boundaries like linear boundary for linear models, conditional idependences (features indepdenent of each other given class),
   - Ensembles increase the probability of correct prediction. bagging, boosting (weak learners with weighted data to focus on mistakes), stacking (meta-learner from base-learners)
   - Loss Functions:
-     - normalized log loss (baseline avg. prediction) for rare events (makes less sensitive to background CTR)
+     - normalized log loss (baseline avg. prediction) for rare events (makes less sensitive to background CTR/base CTR/naive CTR)
      - quantile loss instead of predicting average (expected value) for over/under-estimating
        
 
