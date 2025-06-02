@@ -1,4 +1,4 @@
-# Notes on Data Science, Machine Learning and Statistics
+# Practical Insights on Machine Learning, Data Science and System Design
 
 This repository is a curated collection of real-world insights on machine learning system design, MLOps best practices, scalable inference, and model deployment. Whether you're building a recommendation engine, optimizing real-time prediction latency, or exploring online learning and A/B testing strategies, these notes cover practical ML challenges rarely addressed in textbooks. Ideal for data scientists, ML engineers, and AI practitioners looking to bridge the gap between research and production.
 
